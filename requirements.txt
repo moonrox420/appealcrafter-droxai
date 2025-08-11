@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+pandas
+scikit-learn
+celery[redis]
+pydantic
+nltk
+pyjwt
+scipy
