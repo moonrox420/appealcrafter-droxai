@@ -18,6 +18,7 @@ from nltk.sentiment import SentimentIntensityAnalyzer
 from celery import Celery
 import io
 from scipy import stats
+import ast
 
 logging.basicConfig(level=logging.INFO)
 nltk.download('vader_lexicon', quiet=True)
@@ -32,6 +33,7 @@ class Donor(BaseModel):
     history: list[float]
     interests: str
     capacity: float = None
+    channel: str = "email"
 
 class Appeal(BaseModel):
     donor_id: int
@@ -52,18 +54,27 @@ async def ingest_donors(file: UploadFile = File(...), user=Depends(get_current_u
     try:
         content = await file.read()
         df = pd.read_csv(io.BytesIO(content))
-        required_cols = ['id', 'history', 'interests']
-        if not all(col in df.columns for col in required_cols):
+        required_cols = {'id', 'history', 'interests'}
+        if not required_cols.issubset(df.columns):
             raise ValueError("Missing columns")
-        df['avg_donation'] = df['history'].apply(lambda x: sum(eval(x)) / len(eval(x)) if x else 0)
+        # Use ast.literal_eval safely and vectorized pandas apply for performance
+        def safe_avg(x):
+            try:
+                vals = ast.literal_eval(x)
+                return sum(vals) / len(vals) if vals else 0
+            except Exception:
+                return 0
+        df['avg_donation'] = df['history'].apply(safe_avg)
         X = df[['avg_donation']]
-        y = df['capacity'] if 'capacity' in df else df['avg_donation'] * 1.5
+        y = df['capacity'] if 'capacity' in df.columns else df['avg_donation'] * 1.5
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-        model = RandomForestRegressor(n_estimators=100, random_state=42)
+        model = RandomForestRegressor(n_estimators=50, n_jobs=-1, random_state=42)
         model.fit(X_train, y_train)
         preds = model.predict(X_test)
+        y_var = y.var()
         mse = mean_squared_error(y_test, preds)
-        return {"status": "ingested", "donors": len(df), "model_accuracy": 1 - mse / y.var() if y.var() != 0 else 1.0}
+        accuracy = 1 - mse / y_var if y_var != 0 else 1.0
+        return {"status": "ingested", "donors": len(df), "model_accuracy": accuracy}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -86,14 +97,18 @@ class ABTest(BaseModel):
 @app.post("/ab-test")
 async def run_ab_test(test: ABTest, user=Depends(get_current_user)):
     try:
-        df = pd.DataFrame({'variant': [], 'conversions': []})
-        for variant, convs in test.variants.items():
-            df = pd.concat([df, pd.DataFrame({'variant': variant, 'conversions': convs})])
+        # Use list comprehension for efficient record creation
+        records = [
+            {"variant": variant, "conversions": conv}
+            for variant, convs in test.variants.items()
+            for conv in convs
+        ]
+        df = pd.DataFrame.from_records(records)
         variant_a = df[df['variant'] == 'A']['conversions']
         variant_b = df[df['variant'] == 'B']['conversions']
         if len(variant_a) < 2 or len(variant_b) < 2:
             return {"winner": "Insufficient data", "p_value": 1.0}
-        t_stat, p_val = stats.ttest_ind(variant_a, variant_b)
+        t_stat, p_val = stats.ttest_ind(variant_a, variant_b, equal_var=False)
         winner = "A" if p_val < 0.05 and t_stat > 0 else "B"
         return {"winner": winner, "p_value": p_val, "t_stat": t_stat}
     except Exception as e:
