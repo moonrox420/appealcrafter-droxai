@@ -1,3 +1,16 @@
-*.env
+/f*.env
 __pycache__
 *.pyc
+*.pyo
+*.pyd
+*.env
+.env*
+appealcrafter.db
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+celerybeat-schedule
+celerybeat.pid
+*.log
