@@ -1,0 +1,92 @@
+PROPRIETARY SOFTWARE LICENSE
+AppealCrafter — DroxAI
+
+Copyright (c) 2026 Dustin Hill, DroxAI. All Rights Reserved.
+
+OWNERSHIP
+
+This software, including all source code, documentation, configuration files,
+database schemas, migrations, tests, and associated assets (collectively, the
+"Software"), is the exclusive property of Dustin Hill and DroxAI
+("Owner").
+
+The Software is protected by applicable copyright, trade secret, and other
+intellectual property laws. The Owner retains all right, title, and interest
+in and to the Software, including all intellectual property rights therein.
+
+GRANT OF USE
+
+The Owner grants you a limited, revocable, non-exclusive, non-transferable,
+non-sublicensable license to use the Software solely for lawful, internal
+business purposes, subject to the following restrictions:
+
+1. MODIFICATION RESTRICTION
+
+   You may NOT copy, alter, modify, adapt, translate, reverse engineer,
+   decompile, disassemble, or create derivative works of the Software, in
+   whole or in part, without the prior written authorization and verified
+   permission of the Owner. Any proposed modification must be submitted for
+   review and approved in writing by the Owner before implementation.
+
+2. DISTRIBUTION RESTRICTION
+
+   You may NOT sell, sublicense, rent, lease, loan, redistribute, publish,
+   or otherwise transfer the Software, or any copy or portion thereof, to
+   any third party without the express written consent of the Owner.
+
+3. ATTRIBUTION
+
+   Any permitted use of the Software must retain, unmodified, all copyright
+   notices, ownership statements, and license identifiers present in the
+   Software.
+
+4. NO REMOVAL OF OWNERSHIP
+
+   You may NOT remove, obscure, or alter any ownership, copyright, or
+   proprietary rights notices affixed to or contained within the Software.
+
+VERIFIED PERMISSION
+
+For the purposes of this license, "verified permission" means written
+authorization provided directly by the Owner (Dustin Hill / DroxAI) through
+a signed agreement, authenticated electronic communication, or other
+verifiable means of identity confirmation that the Owner has approved a
+specific action with respect to the Software.
+
+NO WARRANTY
+
+THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. THE OWNER DOES NOT
+WARRANT THAT THE SOFTWARE WILL OPERATE UNINTERRUPTED OR ERROR-FREE, OR THAT
+ALL DEFECTS WILL BE CORRECTED.
+
+LIMITATION OF LIABILITY
+
+IN NO EVENT SHALL THE OWNER BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING
+FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE, INCLUDING BUT NOT LIMITED TO LOST PROFITS,
+LOST DATA, OR BUSINESS INTERRUPTION.
+
+TERMINATION
+
+This license is effective until terminated. This license will terminate
+automatically, without notice, if you violate any provision of this license.
+Upon termination, you must destroy all copies of the Software in your
+possession or control.
+
+GOVERNING LAW
+
+This license shall be governed by and construed in accordance with the laws
+of the State of Illinois, without regard to conflict of law principles.
+
+ACKNOWLEDGMENT
+
+By using, copying, or distributing the Software, you acknowledge that you
+have read, understood, and agree to be bound by the terms and conditions of
+this license.
+
+---
+Dustin Hill
+DroxAI
