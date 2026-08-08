@@ -1,16 +1,38 @@
-/f*.env
-__pycache__
-*.pyc
-*.pyo
-*.pyd
-*.env
-.env*
-appealcrafter.db
+# Environment
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Database
+*.db
+*.sqlite3
+
+# IDE
 .vscode/
 .idea/
 *.swp
+
+# OS
 .DS_Store
 Thumbs.db
+
+# Celery
 celerybeat-schedule
 celerybeat.pid
+
+# Logs
 *.log
+
+DONE.md
