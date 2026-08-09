@@ -13,14 +13,12 @@ from app.db.session import get_db_session
 from app.models.entities import (
     AppealTone,
     Experiment,
-    ExperimentStatus,
     ExperimentVariant,
     FeatureFlag,
     FeatureFlagStatus,
     Journey,
     KnowledgeDocument,
     Template,
-    TemplateVersion,
     User,
     UserRole,
 )

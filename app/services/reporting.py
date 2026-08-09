@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from datetime import datetime, timezone
 
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.entities import Appeal, Campaign, Delivery, DeliveryStatus
@@ -29,8 +29,12 @@ class ReportingService:
             select(Appeal.id).where(Appeal.campaign_id == campaign_id)
         ).scalars().all()
 
-        delivery_query = select(Delivery).where(Delivery.appeal_id.in_(appeal_ids)) if appeal_ids else select(Delivery).where(False)
-        deliveries = list(self.db_session.execute(delivery_query).scalars().all())
+        if appeal_ids:
+            deliveries = list(self.db_session.execute(
+                select(Delivery).where(Delivery.appeal_id.in_(appeal_ids))
+            ).scalars().all())
+        else:
+            deliveries = []
 
         status_counts = {status: 0 for status in DeliveryStatus}
         for delivery in deliveries:
