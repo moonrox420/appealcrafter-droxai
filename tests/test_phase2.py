@@ -31,18 +31,6 @@ from app.services.suppression import SuppressionService
 from app.services.template import TemplateManagementService
 
 
-@pytest.fixture()
-def db_session() -> Session:
-    """Create a PostgreSQL test database session."""
-    settings = get_settings()
-    engine = create_engine(settings.database.sqlalchemy_url)
-    Base.metadata.drop_all(engine)
-    Base.metadata.create_all(engine)
-    session_factory = sessionmaker(bind=engine)
-    session = session_factory()
-    yield session
-    session.close()
-    engine.dispose()
 
 
 def _create_test_donor(db_session: Session) -> Donor:
@@ -109,7 +97,9 @@ def test_guardrail_pipeline_rejects_forbidden_pattern(db_session: Session) -> No
     assert decision.risk_level in (RiskLevel.HIGH, RiskLevel.CRITICAL)
 
 
-def test_guardrail_pipeline_routes_high_value_donor_to_human_review(db_session: Session) -> None:
+def test_guardrail_pipeline_routes_high_value_donor_to_human_review(
+    db_session: Session,
+) -> None:
     """Verify high-value donors always route to human review."""
     pipeline = GuardrailPipeline(db_session, high_value_threshold=5000.0)
     candidate = AppealCandidate(
@@ -146,6 +136,8 @@ def test_guardrail_pipeline_persists_decision(db_session: Session) -> None:
         tone=AppealTone.INSPIRING,
         donor_id=donor.id,
         capacity=100.0,
+        retrieved_chunk_ids=["IR-2025-14"],
+        retrieved_chunks=["Approved impact text about reaching families."],
     )
     decision = pipeline.validate(candidate)
     persisted = pipeline.persist_decision(candidate, decision)
@@ -185,8 +177,12 @@ def test_experiment_sticky_assignment(db_session: Session) -> None:
     db_session.add(experiment)
     db_session.flush()
 
-    variant_a = ExperimentVariant(experiment_id=experiment.id, name="control", weight=1.0, is_control=True)
-    variant_b = ExperimentVariant(experiment_id=experiment.id, name="variant", weight=1.0)
+    variant_a = ExperimentVariant(
+        experiment_id=experiment.id, name="control", weight=1.0, is_control=True
+    )
+    variant_b = ExperimentVariant(
+        experiment_id=experiment.id, name="variant", weight=1.0
+    )
     db_session.add_all([variant_a, variant_b])
     db_session.commit()
 
@@ -202,8 +198,12 @@ def test_experiment_statistical_results(db_session: Session) -> None:
     db_session.add(experiment)
     db_session.flush()
 
-    variant_a = ExperimentVariant(experiment_id=experiment.id, name="control", weight=1.0, is_control=True)
-    variant_b = ExperimentVariant(experiment_id=experiment.id, name="variant", weight=1.0)
+    variant_a = ExperimentVariant(
+        experiment_id=experiment.id, name="control", weight=1.0, is_control=True
+    )
+    variant_b = ExperimentVariant(
+        experiment_id=experiment.id, name="variant", weight=1.0
+    )
     db_session.add_all([variant_a, variant_b])
     db_session.commit()
 

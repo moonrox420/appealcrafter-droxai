@@ -29,8 +29,13 @@ class DeliveryResponse(BaseModel):
 class WebhookEvent(BaseModel):
     """Provider webhook event payload."""
 
-    event_type: str = Field(..., description="Provider event type (delivered, opened, clicked, bounced, complained).")
+    event_type: str = Field(
+        ...,
+        description="Provider event type (delivered, opened, clicked, bounced, complained).",
+    )
     message_id: str = Field(..., description="Provider message identifier.")
     recipient_email: str = Field(..., description="Recipient email address.")
     timestamp: datetime = Field(..., description="Event timestamp.")
-    metadata: dict = Field(default_factory=dict, description="Additional provider metadata.")
+    metadata: dict = Field(
+        default_factory=dict, description="Additional provider metadata."
+    )

@@ -37,7 +37,8 @@ class SuppressionService:
         now = datetime.now(timezone.utc)
         entry_statement = select(SuppressionEntry).where(
             SuppressionEntry.email == email,
-            (SuppressionEntry.expires_at.is_(None)) | (SuppressionEntry.expires_at > now),
+            (SuppressionEntry.expires_at.is_(None))
+            | (SuppressionEntry.expires_at > now),
         )
         return self.db_session.execute(entry_statement).scalar_one_or_none() is not None
 
@@ -89,9 +90,13 @@ class SuppressionService:
         expires_at: datetime | None = None,
     ) -> SuppressionEntry:
         """Add an API-managed suppression list entry."""
-        existing = self.db_session.execute(
-            select(SuppressionEntry).where(SuppressionEntry.email == email)
-        ).scalars().first()
+        existing = (
+            self.db_session.execute(
+                select(SuppressionEntry).where(SuppressionEntry.email == email)
+            )
+            .scalars()
+            .first()
+        )
         if existing is not None:
             existing.reason = reason or existing.reason
             existing.source = source
@@ -114,9 +119,13 @@ class SuppressionService:
 
     def remove_suppression_entry(self, email: str) -> bool:
         """Remove a suppression entry by email."""
-        existing = self.db_session.execute(
-            select(SuppressionEntry).where(SuppressionEntry.email == email)
-        ).scalars().first()
+        existing = (
+            self.db_session.execute(
+                select(SuppressionEntry).where(SuppressionEntry.email == email)
+            )
+            .scalars()
+            .first()
+        )
         if existing is None:
             return False
         self.db_session.delete(existing)
@@ -125,6 +134,10 @@ class SuppressionService:
 
     def list_suppression_entries(self) -> list[SuppressionEntry]:
         """Return all current suppression entries."""
-        return list(self.db_session.execute(
-            select(SuppressionEntry).order_by(SuppressionEntry.suppressed_at.desc())
-        ).scalars().all())
+        return list(
+            self.db_session.execute(
+                select(SuppressionEntry).order_by(SuppressionEntry.suppressed_at.desc())
+            )
+            .scalars()
+            .all()
+        )

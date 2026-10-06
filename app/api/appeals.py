@@ -10,7 +10,11 @@ from sqlalchemy.orm import Session
 from app.core.security import get_current_user
 from app.db.session import get_db_session
 from app.models.entities import AppealTone, User
-from app.schemas.appeal import AppealGenerateRequest, AppealResponse, GenerateAppealResponse
+from app.schemas.appeal import (
+    AppealGenerateRequest,
+    AppealResponse,
+    GenerateAppealResponse,
+)
 from app.services.appeal import AppealService
 from app.workers.tasks import send_campaign_task
 
@@ -32,7 +36,9 @@ def generate_appeal(
             limit=payload.limit,
         )
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+        ) from exc
 
     task_ids: list[str] = []
     appeal_responses: list[AppealResponse] = []
@@ -47,7 +53,7 @@ def generate_appeal(
                 subject=appeal.subject,
                 body=appeal.body,
                 cta=appeal.cta,
-                tone=appeal.tone.value,
+                tone=appeal.tone.value if hasattr(appeal.tone, "value") else str(appeal.tone),
                 capacity_score=appeal.capacity_score,
                 is_template_fallback=appeal.is_template_fallback,
                 created_at=appeal.created_at,

@@ -65,7 +65,9 @@ def refresh_token(
     )
 
 
-@router.post("/users", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/users", response_model=TokenResponse, status_code=status.HTTP_201_CREATED
+)
 def create_user(
     payload: UserCreate,
     db_session: Annotated[Session, Depends(get_db_session)],

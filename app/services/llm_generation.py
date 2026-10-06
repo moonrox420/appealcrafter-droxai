@@ -14,8 +14,8 @@ import httpx
 from app.core.config import get_settings
 from app.core.metrics import LLM_COST_DOLLARS
 from app.models.entities import AppealTone, Donor
-from app.services.rag import RagPipeline, RetrievalResult
-from app.services.template import GeneratedAppealContent, TemplateService
+from app.services.rag import RagPipeline
+from app.services.template import TemplateService
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +85,9 @@ class LlmAppealGenerationService:
                 cta=template_content.cta,
                 tone=template_content.tone,
                 is_template_fallback=True,
-                retrieved_chunk_ids=[chunk.chunk_id for chunk in retrieval_result.chunks],
+                retrieved_chunk_ids=[
+                    chunk.chunk_id for chunk in retrieval_result.chunks
+                ],
             )
 
         citation_context = rag_pipeline.build_citation_context(retrieval_result)
@@ -146,7 +148,9 @@ class LlmAppealGenerationService:
                 )
 
             estimated_cost = 0.00001 * (len(body) // 4)
-            LLM_COST_DOLLARS.labels(model=self.settings.llm.model_name).inc(estimated_cost)
+            LLM_COST_DOLLARS.labels(model=self.settings.llm.model_name).inc(
+                estimated_cost
+            )
 
             return GenerationResult(
                 subject=subject,
@@ -154,7 +158,9 @@ class LlmAppealGenerationService:
                 cta=cta,
                 tone=tone,
                 is_template_fallback=False,
-                retrieved_chunk_ids=[chunk.chunk_id for chunk in retrieval_result.chunks],
+                retrieved_chunk_ids=[
+                    chunk.chunk_id for chunk in retrieval_result.chunks
+                ],
             )
         except Exception as exc:
             logger.error(
@@ -168,7 +174,9 @@ class LlmAppealGenerationService:
                 cta=template_content.cta,
                 tone=template_content.tone,
                 is_template_fallback=True,
-                retrieved_chunk_ids=[chunk.chunk_id for chunk in retrieval_result.chunks],
+                retrieved_chunk_ids=[
+                    chunk.chunk_id for chunk in retrieval_result.chunks
+                ],
             )
 
 

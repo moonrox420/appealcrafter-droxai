@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import time
-from typing import Callable
+from collections.abc import Callable
 
-from fastapi import HTTPException, Request, Response, status
+from fastapi import Request, Response, status
 
 
 class InMemoryRateLimiter:
@@ -49,7 +49,9 @@ class RateLimitMiddleware:
     ) -> None:
         self.app = app
         self.limiter = InMemoryRateLimiter(max_requests=max_requests_per_minute)
-        self.burst_limiter = InMemoryRateLimiter(max_requests=max_burst, window_seconds=10)
+        self.burst_limiter = InMemoryRateLimiter(
+            max_requests=max_burst, window_seconds=10
+        )
 
     async def __call__(self, scope, receive, send) -> None:
         """Enforce rate limits for each incoming request."""
@@ -70,7 +72,9 @@ class RateLimitMiddleware:
             await response(scope, receive, send)
             return
 
-        burst_allowed, burst_retry_after = self.burst_limiter.check_request(str(client_ip))
+        burst_allowed, burst_retry_after = self.burst_limiter.check_request(
+            str(client_ip)
+        )
         if not burst_allowed:
             response = Response(
                 content='{"detail": "Rate limit exceeded"}',
@@ -84,7 +88,9 @@ class RateLimitMiddleware:
         await self.app(scope, receive, send)
 
 
-def build_rate_limit_middleware(app: Callable, max_per_minute: int, max_burst: int) -> RateLimitMiddleware:
+def build_rate_limit_middleware(
+    app: Callable, max_per_minute: int, max_burst: int
+) -> RateLimitMiddleware:
     """Construct a configured rate limit middleware instance."""
     return RateLimitMiddleware(
         app=app,

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
@@ -53,7 +53,14 @@ feature_flags_router = APIRouter(prefix="/feature-flags", tags=["feature-flags"]
 admin_required = require_role(UserRole.ADMIN)
 
 
-@knowledge_router.post("", response_model=KnowledgeDocumentResponse, status_code=status.HTTP_201_CREATED)
+def _val(x: Any) -> str:
+    """Safely return value of enum or string."""
+    return x.value if hasattr(x, "value") else str(x)
+
+
+@knowledge_router.post(
+    "", response_model=KnowledgeDocumentResponse, status_code=status.HTTP_201_CREATED
+)
 def create_knowledge_document(
     payload: KnowledgeDocumentCreate,
     db_session: Annotated[Session, Depends(get_db_session)],
@@ -84,9 +91,13 @@ def list_knowledge_documents(
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> list[KnowledgeDocumentResponse]:
     """List knowledge documents."""
-    documents = list(db_session.execute(
-        select(KnowledgeDocument).order_by(KnowledgeDocument.created_at.desc())
-    ).scalars().all())
+    documents = list(
+        db_session.execute(
+            select(KnowledgeDocument).order_by(KnowledgeDocument.created_at.desc())
+        )
+        .scalars()
+        .all()
+    )
     return [
         KnowledgeDocumentResponse(
             id=doc.id,
@@ -110,7 +121,9 @@ def ingest_knowledge_document(
     try:
         chunk_count = rag_pipeline.ingest_document(document_id)
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+        ) from exc
     return {"document_id": document_id, "chunk_count": chunk_count}
 
 
@@ -123,7 +136,9 @@ def get_knowledge_document(
     """Return the full knowledge document with chunks."""
     document = db_session.get(KnowledgeDocument, document_id)
     if document is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Document not found."
+        )
     return {
         "id": document.id,
         "title": document.title,
@@ -134,7 +149,9 @@ def get_knowledge_document(
     }
 
 
-@templates_router.post("", response_model=TemplateResponse, status_code=status.HTTP_201_CREATED)
+@templates_router.post(
+    "", response_model=TemplateResponse, status_code=status.HTTP_201_CREATED
+)
 def create_template(
     payload: TemplateCreate,
     db_session: Annotated[Session, Depends(get_db_session)],
@@ -169,9 +186,11 @@ def list_templates(
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> list[TemplateResponse]:
     """List all templates."""
-    templates = list(db_session.execute(
-        select(Template).order_by(Template.created_at.desc())
-    ).scalars().all())
+    templates = list(
+        db_session.execute(select(Template).order_by(Template.created_at.desc()))
+        .scalars()
+        .all()
+    )
     return [
         TemplateResponse(
             id=template.id,
@@ -185,7 +204,11 @@ def list_templates(
     ]
 
 
-@templates_router.post("/{template_id}/versions", response_model=TemplateVersionResponse, status_code=status.HTTP_201_CREATED)
+@templates_router.post(
+    "/{template_id}/versions",
+    response_model=TemplateVersionResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 def create_template_version(
     template_id: str,
     payload: TemplateVersionCreate,
@@ -205,7 +228,9 @@ def create_template_version(
             created_by_user_id=current_user.id,
         )
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
+        ) from exc
     return TemplateVersionResponse(
         id=version.id,
         template_id=version.template_id,
@@ -213,13 +238,15 @@ def create_template_version(
         subject_template=version.subject_template,
         body_template=version.body_template,
         cta_template=version.cta_template,
-        tone=version.tone.value,
+        tone=_val(version.tone),
         change_note=version.change_note,
         created_at=version.created_at,
     )
 
 
-@templates_router.post("/{template_id}/rollback/{version_number}", response_model=TemplateResponse)
+@templates_router.post(
+    "/{template_id}/rollback/{version_number}", response_model=TemplateResponse
+)
 def rollback_template(
     template_id: str,
     version_number: int,
@@ -231,7 +258,9 @@ def rollback_template(
     try:
         template = service.rollback_to_version(template_id, version_number)
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
+        ) from exc
     return TemplateResponse(
         id=template.id,
         name=template.name,
@@ -242,7 +271,9 @@ def rollback_template(
     )
 
 
-@templates_router.get("/{template_id}/versions", response_model=list[TemplateVersionResponse])
+@templates_router.get(
+    "/{template_id}/versions", response_model=list[TemplateVersionResponse]
+)
 def list_template_versions(
     template_id: str,
     db_session: Annotated[Session, Depends(get_db_session)],
@@ -253,7 +284,9 @@ def list_template_versions(
     try:
         versions = service.list_versions(template_id)
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
+        ) from exc
     return [
         TemplateVersionResponse(
             id=version.id,
@@ -262,7 +295,7 @@ def list_template_versions(
             subject_template=version.subject_template,
             body_template=version.body_template,
             cta_template=version.cta_template,
-            tone=version.tone.value,
+            tone=_val(version.tone),
             change_note=version.change_note,
             created_at=version.created_at,
         )
@@ -270,7 +303,9 @@ def list_template_versions(
     ]
 
 
-@experiments_router.post("", response_model=ExperimentResponse, status_code=status.HTTP_201_CREATED)
+@experiments_router.post(
+    "", response_model=ExperimentResponse, status_code=status.HTTP_201_CREATED
+)
 def create_experiment(
     payload: ExperimentCreate,
     db_session: Annotated[Session, Depends(get_db_session)],
@@ -304,7 +339,7 @@ def create_experiment(
         name=experiment.name,
         description=experiment.description,
         hypothesis=experiment.hypothesis,
-        status=experiment.status.value,
+        status=_val(experiment.status),
         assignment_key=experiment.assignment_key,
         traffic_allocation_percent=experiment.traffic_allocation_percent,
         started_at=experiment.started_at,
@@ -321,16 +356,18 @@ def list_experiments(
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> list[ExperimentResponse]:
     """List all experiments."""
-    experiments = list(db_session.execute(
-        select(Experiment).order_by(Experiment.created_at.desc())
-    ).scalars().all())
+    experiments = list(
+        db_session.execute(select(Experiment).order_by(Experiment.created_at.desc()))
+        .scalars()
+        .all()
+    )
     return [
         ExperimentResponse(
             id=experiment.id,
             name=experiment.name,
             description=experiment.description,
             hypothesis=experiment.hypothesis,
-            status=experiment.status.value,
+            status=_val(experiment.status),
             assignment_key=experiment.assignment_key,
             traffic_allocation_percent=experiment.traffic_allocation_percent,
             started_at=experiment.started_at,
@@ -352,7 +389,9 @@ def start_experiment(
     """Start an experiment."""
     experiment = db_session.get(Experiment, experiment_id)
     if experiment is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Experiment not found.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Experiment not found."
+        )
     service = ExperimentService(db_session)
     experiment = service.start_experiment(experiment)
     return ExperimentResponse(
@@ -360,7 +399,7 @@ def start_experiment(
         name=experiment.name,
         description=experiment.description,
         hypothesis=experiment.hypothesis,
-        status=experiment.status.value,
+        status=_val(experiment.status),
         assignment_key=experiment.assignment_key,
         traffic_allocation_percent=experiment.traffic_allocation_percent,
         started_at=experiment.started_at,
@@ -380,12 +419,16 @@ def experiment_results(
     """Compute statistical results for an experiment."""
     experiment = db_session.get(Experiment, experiment_id)
     if experiment is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Experiment not found.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Experiment not found."
+        )
     service = ExperimentService(db_session)
     return service.compute_statistical_results(experiment)
 
 
-@experiments_router.post("/{experiment_id}/promote/{variant_id}", response_model=ExperimentResponse)
+@experiments_router.post(
+    "/{experiment_id}/promote/{variant_id}", response_model=ExperimentResponse
+)
 def promote_experiment_variant(
     experiment_id: str,
     variant_id: str,
@@ -395,18 +438,22 @@ def promote_experiment_variant(
     """Promote a winning variant with an audit trail."""
     experiment = db_session.get(Experiment, experiment_id)
     if experiment is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Experiment not found.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Experiment not found."
+        )
     service = ExperimentService(db_session)
     try:
         experiment = service.promote_winning_variant(experiment, variant_id)
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+        ) from exc
     return ExperimentResponse(
         id=experiment.id,
         name=experiment.name,
         description=experiment.description,
         hypothesis=experiment.hypothesis,
-        status=experiment.status.value,
+        status=_val(experiment.status),
         assignment_key=experiment.assignment_key,
         traffic_allocation_percent=experiment.traffic_allocation_percent,
         started_at=experiment.started_at,
@@ -417,7 +464,9 @@ def promote_experiment_variant(
     )
 
 
-@journeys_router.post("", response_model=JourneyResponse, status_code=status.HTTP_201_CREATED)
+@journeys_router.post(
+    "", response_model=JourneyResponse, status_code=status.HTTP_201_CREATED
+)
 def create_journey(
     payload: JourneyCreate,
     db_session: Annotated[Session, Depends(get_db_session)],
@@ -448,9 +497,11 @@ def list_journeys(
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> list[JourneyResponse]:
     """List all journeys."""
-    journeys = list(db_session.execute(
-        select(Journey).order_by(Journey.created_at.desc())
-    ).scalars().all())
+    journeys = list(
+        db_session.execute(select(Journey).order_by(Journey.created_at.desc()))
+        .scalars()
+        .all()
+    )
     return [
         JourneyResponse(
             id=journey.id,
@@ -464,7 +515,9 @@ def list_journeys(
     ]
 
 
-@feature_flags_router.post("", response_model=FeatureFlagResponse, status_code=status.HTTP_201_CREATED)
+@feature_flags_router.post(
+    "", response_model=FeatureFlagResponse, status_code=status.HTTP_201_CREATED
+)
 def create_feature_flag(
     payload: FeatureFlagCreate,
     db_session: Annotated[Session, Depends(get_db_session)],
@@ -486,7 +539,7 @@ def create_feature_flag(
         id=flag.id,
         name=flag.name,
         description=flag.description,
-        status=flag.status.value,
+        status=_val(flag.status),
         rollout_percent=flag.rollout_percent,
         updated_at=flag.updated_at,
     )
@@ -501,7 +554,9 @@ def evaluate_feature_flag(
 ) -> dict:
     """Evaluate a feature flag for a subject."""
     service = FeatureFlagService(db_session)
-    enabled = service.is_enabled(flag_name, tenant_id=current_user.tenant_id, subject_key=subject_key)
+    enabled = service.is_enabled(
+        flag_name, tenant_id=current_user.tenant_id, subject_key=subject_key
+    )
     return {"name": flag_name, "enabled": enabled}
 
 
@@ -511,15 +566,17 @@ def list_feature_flags(
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> list[FeatureFlagResponse]:
     """List all feature flags."""
-    flags = list(db_session.execute(
-        select(FeatureFlag).order_by(FeatureFlag.created_at.desc())
-    ).scalars().all())
+    flags = list(
+        db_session.execute(select(FeatureFlag).order_by(FeatureFlag.created_at.desc()))
+        .scalars()
+        .all()
+    )
     return [
         FeatureFlagResponse(
             id=flag.id,
             name=flag.name,
             description=flag.description,
-            status=flag.status.value,
+            status=_val(flag.status),
             rollout_percent=flag.rollout_percent,
             updated_at=flag.updated_at,
         )

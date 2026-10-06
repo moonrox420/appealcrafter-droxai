@@ -17,20 +17,6 @@ from app.services.delivery import DeliveryService
 from app.services.donor import DonorService
 
 
-@pytest.fixture()
-def db_session() -> Session:
-    """Create a PostgreSQL test database session."""
-    settings = get_settings()
-    engine = create_engine(settings.database.sqlalchemy_url)
-    Base.metadata.drop_all(engine)
-    Base.metadata.create_all(engine)
-    session_factory = sessionmaker(bind=engine)
-    session = session_factory()
-    yield session
-    session.close()
-    engine.dispose()
-
-
 def test_ingest_generate_queue_status_flow(db_session: Session) -> None:
     """Verify the full donor ingest to delivery status pipeline."""
     donor_service = DonorService(db_session)
@@ -64,7 +50,9 @@ def test_ingest_generate_queue_status_flow(db_session: Session) -> None:
     )
     assert delivery.status == DeliveryStatus.QUEUED
 
-    delivery = delivery_service.send_delivery(delivery, appeals[0].subject, appeals[0].body)
+    delivery = delivery_service.send_delivery(
+        delivery, appeals[0].subject, appeals[0].body
+    )
     assert delivery.status in (DeliveryStatus.SENT, DeliveryStatus.FAILED)
 
     updated_delivery = db_session.get(Delivery, delivery.id)

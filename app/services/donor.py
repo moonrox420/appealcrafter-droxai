@@ -21,7 +21,9 @@ class DonorService:
 
     def find_by_email(self, email: str) -> Donor | None:
         """Return the active donor with the given email, if any."""
-        statement = select(Donor).where(Donor.email == email, Donor.is_deleted.is_(False))
+        statement = select(Donor).where(
+            Donor.email == email, Donor.is_deleted.is_(False)
+        )
         return self.db_session.execute(statement).scalar_one_or_none()
 
     def create_donor(self, donor_payload: DonorCreate) -> Donor:

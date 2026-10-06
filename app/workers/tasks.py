@@ -16,7 +16,14 @@ from app.services.ml import PredictionService
 from app.services.suppression import SuppressionService
 from app.workers.celery_app import celery_app
 
+from typing import Any
+
 logger = logging.getLogger(__name__)
+
+
+def _val(x: Any) -> str:
+    """Safely return value of enum or string."""
+    return x.value if hasattr(x, "value") else str(x)
 
 
 class DatabaseTask(Task):
@@ -38,7 +45,9 @@ class DatabaseTask(Task):
         return self._db_session
 
 
-@celery_app.task(base=DatabaseTask, bind=True, name="app.workers.tasks.send_campaign_task")
+@celery_app.task(
+    base=DatabaseTask, bind=True, name="app.workers.tasks.send_campaign_task"
+)
 def send_campaign_task(self: DatabaseTask, appeal_id: str) -> dict:
     """Send a single appeal through the email provider with retries."""
     db_session = self.db_session
@@ -66,10 +75,12 @@ def send_campaign_task(self: DatabaseTask, appeal_id: str) -> dict:
     if delivery.status == DeliveryStatus.FAILED:
         raise self.retry(exc=RuntimeError(delivery.error_detail or "Send failed"))
 
-    return {"status": delivery.status.value, "delivery_id": delivery.id}
+    return {"status": _val(delivery.status), "delivery_id": delivery.id}
 
 
-@celery_app.task(base=DatabaseTask, bind=True, name="app.workers.tasks.auto_send_appeals_task")
+@celery_app.task(
+    base=DatabaseTask, bind=True, name="app.workers.tasks.auto_send_appeals_task"
+)
 def auto_send_appeals_task(self: DatabaseTask) -> dict:
     """Generate and queue appeals for eligible donors on a schedule."""
     from app.services.appeal import AppealService
@@ -90,7 +101,9 @@ def auto_send_appeals_task(self: DatabaseTask) -> dict:
     return {"queued": len(task_ids), "task_ids": task_ids}
 
 
-@celery_app.task(base=DatabaseTask, bind=True, name="app.workers.tasks.run_async_job_task")
+@celery_app.task(
+    base=DatabaseTask, bind=True, name="app.workers.tasks.run_async_job_task"
+)
 def run_async_job_task(self: DatabaseTask, job_id: str) -> dict:
     """Execute an async bulk job and update its status."""
     db_session = self.db_session
@@ -112,7 +125,9 @@ def run_async_job_task(self: DatabaseTask, job_id: str) -> dict:
         raise
 
 
-@celery_app.task(base=DatabaseTask, bind=True, name="app.workers.tasks.retrain_model_task")
+@celery_app.task(
+    base=DatabaseTask, bind=True, name="app.workers.tasks.retrain_model_task"
+)
 def retrain_model_task(self: DatabaseTask) -> dict:
     """Retrain the propensity model on a schedule with promotion gates."""
     from datetime import datetime, timezone
@@ -124,13 +139,15 @@ def retrain_model_task(self: DatabaseTask) -> dict:
     promoted = service.model_registry.promote_if_passes_gate(model_version)
     return {
         "model_version_id": model_version.id,
-        "status": model_version.status.value,
+        "status": _val(model_version.status),
         "promoted": promoted,
         "metrics": model_version.metrics,
     }
 
 
-@celery_app.task(base=DatabaseTask, bind=True, name="app.workers.tasks.backup_database_task")
+@celery_app.task(
+    base=DatabaseTask, bind=True, name="app.workers.tasks.backup_database_task"
+)
 def backup_database_task(self: DatabaseTask) -> dict:
     """Perform a Postgres backup to the configured backup bucket."""
     from app.core.config import get_settings
@@ -143,7 +160,9 @@ def backup_database_task(self: DatabaseTask) -> dict:
     import os
     import subprocess
 
-    backup_filename = f"appealcrafter-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}.dump"
+    backup_filename = (
+        f"appealcrafter-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}.dump"
+    )
     backup_path = f"/tmp/{backup_filename}"
     command = [
         "pg_dump",
@@ -168,7 +187,9 @@ def backup_database_task(self: DatabaseTask) -> dict:
         return {"status": "failed", "error": str(exc)}
 
 
-@celery_app.task(base=DatabaseTask, bind=True, name="app.workers.tasks.monitor_queue_depth_task")
+@celery_app.task(
+    base=DatabaseTask, bind=True, name="app.workers.tasks.monitor_queue_depth_task"
+)
 def monitor_queue_depth_task(self: DatabaseTask) -> dict:
     """Expose Celery queue depth as a Prometheus gauge."""
     from app.core.metrics import QUEUE_DEPTH

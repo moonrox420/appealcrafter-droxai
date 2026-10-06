@@ -32,11 +32,12 @@ class AppealService:
 
     def generate_appeals(
         self,
-        tone: AppealTone,
+        tone: AppealTone | str,
         campaign_id: str | None = None,
         limit: int = 100,
     ) -> list[Appeal]:
         """Generate appeals for eligible donors and persist them."""
+        resolved_tone = AppealTone(tone) if isinstance(tone, str) else tone
         campaign = None
         if campaign_id is not None:
             campaign = self.db_session.get(Campaign, campaign_id)
@@ -65,7 +66,7 @@ class AppealService:
 
             generation_result = self.llm_generation_service.generate(
                 donor=donor,
-                tone=tone,
+                tone=resolved_tone,
                 rag_pipeline=self.rag_pipeline,
             )
 
@@ -94,13 +95,19 @@ class AppealService:
                 retrieved_chunks=[],
             )
             decision = self.guardrail_pipeline.validate(candidate)
-            guardrail_decision = self.guardrail_pipeline.persist_decision(candidate, decision, appeal)
+            guardrail_decision = self.guardrail_pipeline.persist_decision(
+                candidate, decision, appeal
+            )
             appeal.guardrail_decision_id = guardrail_decision.id
 
             if not decision.approved:
                 logger.info(
                     "Appeal not approved by guardrails; using template fallback",
-                    extra={"donor_id": donor.id, "action": decision.action.value, "risk_score": decision.risk_score},
+                    extra={
+                        "donor_id": donor.id,
+                        "action": decision.action.value,
+                        "risk_score": decision.risk_score,
+                    },
                 )
                 template_content = self.template_service.generate(donor, tone)
                 appeal.subject = template_content.subject

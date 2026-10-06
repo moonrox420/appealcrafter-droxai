@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import logging
 import re
-import time
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from enum import Enum
@@ -269,7 +268,10 @@ class GuardrailPipeline:
             passed=passed,
             score=0.0 if passed else 80.0,
             reasons=reasons,
-            details={"subject_length": len(candidate.subject), "body_length": len(candidate.body)},
+            details={
+                "subject_length": len(candidate.subject),
+                "body_length": len(candidate.body),
+            },
         )
 
     def _stage_rule_based(self, candidate: AppealCandidate) -> GuardrailStageResult:
@@ -294,12 +296,22 @@ class GuardrailPipeline:
         fast_reasons: list[str] = []
         fast_score = 0.0
 
-        urgent_pressure_words = ("immediately", "act now", "right now", "today only", "last chance")
+        urgent_pressure_words = (
+            "immediately",
+            "act now",
+            "right now",
+            "today only",
+            "last chance",
+        )
         if any(word in text for word in urgent_pressure_words):
             fast_score = max(fast_score, 25.0)
             fast_reasons.append("Pressure language detected")
 
-        manipulative_phrases = ("you deserve", "you've been missing out", "hidden benefits")
+        manipulative_phrases = (
+            "you deserve",
+            "you've been missing out",
+            "hidden benefits",
+        )
         if any(phrase in text for phrase in manipulative_phrases):
             fast_score = max(fast_score, 20.0)
             fast_reasons.append("Potential manipulative language")
@@ -331,7 +343,9 @@ class GuardrailPipeline:
                 stage=GuardrailStage.GROUNDING,
                 passed=False,
                 score=60.0,
-                reasons=["No retrieved context provided; LLM claims cannot be verified"],
+                reasons=[
+                    "No retrieved context provided; LLM claims cannot be verified"
+                ],
                 details={"chunks_used": 0},
             )
 
@@ -341,7 +355,10 @@ class GuardrailPipeline:
                 passed=True,
                 score=10.0,
                 details={
-                    "chunks_used": max(len(candidate.retrieved_chunk_ids), len(candidate.retrieved_chunks)),
+                    "chunks_used": max(
+                        len(candidate.retrieved_chunk_ids),
+                        len(candidate.retrieved_chunks),
+                    ),
                     "method": "chunks_present",
                 },
             )
@@ -407,11 +424,16 @@ class GuardrailPipeline:
             if candidate.tone.value not in candidate.body.lower():
                 voice_concerns.append("Urgent tone not reflected in body")
         elif candidate.tone == AppealTone.GRATEFUL:
-            if "thank" not in candidate.body.lower() and "grateful" not in candidate.body.lower():
+            if (
+                "thank" not in candidate.body.lower()
+                and "grateful" not in candidate.body.lower()
+            ):
                 voice_concerns.append("Grateful tone not reflected in body")
 
         if len(candidate.body.split()) > 500:
-            voice_concerns.append("Body exceeds 500 words; exceeds brand voice guidelines")
+            voice_concerns.append(
+                "Body exceeds 500 words; exceeds brand voice guidelines"
+            )
 
         passed = len(voice_concerns) == 0
         return GuardrailStageResult(
@@ -427,7 +449,10 @@ class GuardrailPipeline:
         body_lower = candidate.body.lower()
         if "unsubscribe" not in body_lower and "opt out" not in body_lower:
             reasons.append("Missing unsubscribe language")
-        if self.settings.email.physical_address and self.settings.email.physical_address not in candidate.body:
+        if (
+            self.settings.email.physical_address
+            and self.settings.email.physical_address not in candidate.body
+        ):
             reasons.append("Missing physical mailing address")
         score = 40.0 if reasons else 0.0
         return GuardrailStageResult(
@@ -444,7 +469,10 @@ class GuardrailPipeline:
             passed=True,
             score=0.0,
             details={
-                "high_value_donor": bool(candidate.capacity and candidate.capacity >= self.high_value_threshold),
+                "high_value_donor": bool(
+                    candidate.capacity
+                    and candidate.capacity >= self.high_value_threshold
+                ),
                 "capacity": candidate.capacity,
             },
         )
@@ -456,9 +484,14 @@ class GuardrailPipeline:
         short_circuit: bool = False,
     ) -> GuardrailDecisionResult:
         """Combine stage results into a final decision with routing."""
-        total_score = max(result.score for result in stage_results) if stage_results else 0.0
+        total_score = (
+            max(result.score for result in stage_results) if stage_results else 0.0
+        )
         all_reasons = [reason for result in stage_results for reason in result.reasons]
-        is_high_value = candidate.capacity is not None and candidate.capacity >= self.high_value_threshold
+        is_high_value = (
+            candidate.capacity is not None
+            and candidate.capacity >= self.high_value_threshold
+        )
 
         if short_circuit or total_score >= REJECT_SCORE_THRESHOLD:
             action = GuardrailAction.REJECT
@@ -525,7 +558,11 @@ class GuardrailPipeline:
                 "subject": candidate.subject,
                 "body": candidate.body,
                 "cta": candidate.cta,
-                "tone": candidate.tone.value,
+                "tone": (
+                    candidate.tone.value
+                    if hasattr(candidate.tone, "value")
+                    else str(candidate.tone)
+                ),
                 "retrieved_chunk_ids": candidate.retrieved_chunk_ids,
             },
             circuit_breaker_open=self.is_circuit_breaker_open(),

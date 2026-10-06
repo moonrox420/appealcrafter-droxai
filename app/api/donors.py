@@ -34,7 +34,9 @@ def ingest_donors(
             accepted_count += 1
         except Exception as exc:
             rejected_count += 1
-            errors.append({"index": index, "email": donor_payload.email, "error": str(exc)})
+            errors.append(
+                {"index": index, "email": donor_payload.email, "error": str(exc)}
+            )
 
     return DonorIngestResponse(
         accepted_count=accepted_count,
@@ -81,4 +83,6 @@ def soft_delete_donor(
     try:
         donor_service.soft_delete_donor(donor_id)
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
+        ) from exc

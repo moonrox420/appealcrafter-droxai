@@ -47,32 +47,38 @@ def create_access_token(user: User) -> str:
     """Create a short-lived JWT access token."""
     settings = get_settings()
     now = datetime.now(timezone.utc)
+    role_value = user.role.value if hasattr(user.role, "value") else str(user.role)
     payload: dict[str, Any] = {
         "sub": user.id,
-        "role": user.role.value,
+        "role": role_value,
         "token_type": "access",
         "iss": settings.security.issuer,
         "aud": settings.security.audience,
         "iat": now,
         "exp": now + timedelta(minutes=settings.security.access_token_expiry_minutes),
     }
-    return jwt.encode(payload, settings.security.jwt_secret, algorithm=settings.security.jwt_algorithm)
+    return jwt.encode(
+        payload, settings.security.jwt_secret, algorithm=settings.security.jwt_algorithm
+    )
 
 
 def create_refresh_token(user: User) -> str:
     """Create a longer-lived JWT refresh token."""
     settings = get_settings()
     now = datetime.now(timezone.utc)
+    role_value = user.role.value if hasattr(user.role, "value") else str(user.role)
     payload: dict[str, Any] = {
         "sub": user.id,
-        "role": user.role.value,
+        "role": role_value,
         "token_type": "refresh",
         "iss": settings.security.issuer,
         "aud": settings.security.audience,
         "iat": now,
         "exp": now + timedelta(days=settings.security.refresh_token_expiry_days),
     }
-    return jwt.encode(payload, settings.security.jwt_secret, algorithm=settings.security.jwt_algorithm)
+    return jwt.encode(
+        payload, settings.security.jwt_secret, algorithm=settings.security.jwt_algorithm
+    )
 
 
 def decode_token(token: str, expected_token_type: str) -> TokenPayload:
@@ -125,11 +131,28 @@ def get_current_user(
 
 def require_role(required_role: UserRole):
     """Factory for role-based access control dependencies."""
-    def role_dependency(current_user: Annotated[User, Depends(get_current_user)]) -> User:
-        if current_user.role != required_role and current_user.role != UserRole.ADMIN:
+
+    def role_dependency(
+        current_user: Annotated[User, Depends(get_current_user)],
+    ) -> User:
+        user_role_str = (
+            current_user.role.value
+            if hasattr(current_user.role, "value")
+            else str(current_user.role)
+        )
+        required_role_str = (
+            required_role.value
+            if hasattr(required_role, "value")
+            else str(required_role)
+        )
+        if (
+            user_role_str != required_role_str
+            and user_role_str != UserRole.ADMIN.value
+        ):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Insufficient permissions",
             )
         return current_user
+
     return role_dependency

@@ -42,35 +42,61 @@ class ComplianceService:
         if donor is None:
             raise ValueError(f"Donor {donor_id} not found.")
 
-        donations = list(self.db_session.execute(
-            select(DonationHistory).where(DonationHistory.donor_id == donor_id)
-        ).scalars().all())
-
-        appeals = list(self.db_session.execute(
-            select(Appeal).where(Appeal.donor_id == donor_id)
-        ).scalars().all())
-
-        deliveries = list(self.db_session.execute(
-            select(Delivery).join(Appeal, Delivery.appeal_id == Appeal.id).where(
-                Appeal.donor_id == donor_id
+        donations = list(
+            self.db_session.execute(
+                select(DonationHistory).where(DonationHistory.donor_id == donor_id)
             )
-        ).scalars().all())
+            .scalars()
+            .all()
+        )
 
-        unsubscribes = list(self.db_session.execute(
-            select(Unsubscribe).where(Unsubscribe.email == donor.email)
-        ).scalars().all())
+        appeals = list(
+            self.db_session.execute(select(Appeal).where(Appeal.donor_id == donor_id))
+            .scalars()
+            .all()
+        )
 
-        preferences = list(self.db_session.execute(
-            select(DonorPreference).where(DonorPreference.donor_id == donor_id)
-        ).scalars().all())
+        deliveries = list(
+            self.db_session.execute(
+                select(Delivery)
+                .join(Appeal, Delivery.appeal_id == Appeal.id)
+                .where(Appeal.donor_id == donor_id)
+            )
+            .scalars()
+            .all()
+        )
 
-        predictions = list(self.db_session.execute(
-            select(PredictionRecord).where(PredictionRecord.donor_id == donor_id)
-        ).scalars().all())
+        unsubscribes = list(
+            self.db_session.execute(
+                select(Unsubscribe).where(Unsubscribe.email == donor.email)
+            )
+            .scalars()
+            .all()
+        )
 
-        guardrail_entries = list(self.db_session.execute(
-            select(GuardrailDecision).where(GuardrailDecision.donor_id == donor_id)
-        ).scalars().all())
+        preferences = list(
+            self.db_session.execute(
+                select(DonorPreference).where(DonorPreference.donor_id == donor_id)
+            )
+            .scalars()
+            .all()
+        )
+
+        predictions = list(
+            self.db_session.execute(
+                select(PredictionRecord).where(PredictionRecord.donor_id == donor_id)
+            )
+            .scalars()
+            .all()
+        )
+
+        guardrail_entries = list(
+            self.db_session.execute(
+                select(GuardrailDecision).where(GuardrailDecision.donor_id == donor_id)
+            )
+            .scalars()
+            .all()
+        )
 
         email = self.encryption_service.decrypt_field(donor.email)
 
@@ -86,27 +112,44 @@ class ComplianceService:
                 "capacity_score": donor.capacity_score,
                 "propensity_score": donor.propensity_score,
                 "engagement_score": donor.engagement_score,
-                "consent_given_at": donor.consent_given_at.isoformat() if donor.consent_given_at else None,
+                "consent_given_at": (
+                    donor.consent_given_at.isoformat()
+                    if donor.consent_given_at
+                    else None
+                ),
                 "consent_source": donor.consent_source,
                 "rfm_recency_days": donor.rfm_recency_days,
                 "rfm_frequency_count": donor.rfm_frequency_count,
                 "rfm_monetary_value": donor.rfm_monetary_value,
             },
             "donation_history": [
-                {"amount": donation.amount, "donated_at": donation.donated_at.isoformat()}
+                {
+                    "amount": donation.amount,
+                    "donated_at": donation.donated_at.isoformat(),
+                }
                 for donation in donations
             ],
             "appeals": [
-                {"id": appeal.id, "subject": appeal.subject, "created_at": appeal.created_at.isoformat()}
+                {
+                    "id": appeal.id,
+                    "subject": appeal.subject,
+                    "created_at": appeal.created_at.isoformat(),
+                }
                 for appeal in appeals
             ],
             "deliveries": [
                 {
                     "id": delivery.id,
                     "status": delivery.status.value,
-                    "sent_at": delivery.sent_at.isoformat() if delivery.sent_at else None,
-                    "opened_at": delivery.opened_at.isoformat() if delivery.opened_at else None,
-                    "clicked_at": delivery.clicked_at.isoformat() if delivery.clicked_at else None,
+                    "sent_at": (
+                        delivery.sent_at.isoformat() if delivery.sent_at else None
+                    ),
+                    "opened_at": (
+                        delivery.opened_at.isoformat() if delivery.opened_at else None
+                    ),
+                    "clicked_at": (
+                        delivery.clicked_at.isoformat() if delivery.clicked_at else None
+                    ),
                 }
                 for delivery in deliveries
             ],
@@ -162,22 +205,32 @@ class ComplianceService:
         anonymized_subject = "[Anonymized]"
         anonymized_body = "[Anonymized content per GDPR/CCPA request]"
 
-        appeals = list(self.db_session.execute(
-            select(Appeal).where(Appeal.donor_id == donor_id)
-        ).scalars().all())
+        appeals = list(
+            self.db_session.execute(select(Appeal).where(Appeal.donor_id == donor_id))
+            .scalars()
+            .all()
+        )
         for appeal in appeals:
             appeal.subject = anonymized_subject
             appeal.body = anonymized_body
 
-        unsubscribes = list(self.db_session.execute(
-            select(Unsubscribe).where(Unsubscribe.email == donor_email)
-        ).scalars().all())
+        unsubscribes = list(
+            self.db_session.execute(
+                select(Unsubscribe).where(Unsubscribe.email == donor_email)
+            )
+            .scalars()
+            .all()
+        )
         for unsubscribe in unsubscribes:
             unsubscribe.email = f"anonymized-{donor.id}@anonymized.invalid"
 
-        suppression_entries = list(self.db_session.execute(
-            select(SuppressionEntry).where(SuppressionEntry.email == donor_email)
-        ).scalars().all())
+        suppression_entries = list(
+            self.db_session.execute(
+                select(SuppressionEntry).where(SuppressionEntry.email == donor_email)
+            )
+            .scalars()
+            .all()
+        )
         for entry in suppression_entries:
             entry.email = f"anonymized-{donor.id}@anonymized.invalid"
 
@@ -201,17 +254,25 @@ class ComplianceService:
 
         donor_email = self.encryption_service.decrypt_field(donor.email)
 
-        deliveries = list(self.db_session.execute(
-            select(Delivery).join(Appeal, Delivery.appeal_id == Appeal.id).where(
-                Appeal.donor_id == donor_id
+        deliveries = list(
+            self.db_session.execute(
+                select(Delivery)
+                .join(Appeal, Delivery.appeal_id == Appeal.id)
+                .where(Appeal.donor_id == donor_id)
             )
-        ).scalars().all())
+            .scalars()
+            .all()
+        )
         for delivery in deliveries:
             delivery.recipient_email = f"deleted-{donor.id}@deleted.invalid"
 
-        unsubscribes = list(self.db_session.execute(
-            select(Unsubscribe).where(Unsubscribe.email == donor_email)
-        ).scalars().all())
+        unsubscribes = list(
+            self.db_session.execute(
+                select(Unsubscribe).where(Unsubscribe.email == donor_email)
+            )
+            .scalars()
+            .all()
+        )
         for unsubscribe in unsubscribes:
             self.db_session.delete(unsubscribe)
 

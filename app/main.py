@@ -10,6 +10,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+import app
 from app.api import appeals, auth, campaigns, donors, health, metrics, webhooks
 from app.api.operations import (
     compliance_router,
@@ -69,7 +70,9 @@ if settings.observability.otlp_endpoint:
     from opentelemetry.sdk.trace import TracerProvider
     from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
-    resource = Resource.create({"service.name": settings.observability.otlp_service_name})
+    resource = Resource.create(
+        {"service.name": settings.observability.otlp_service_name}
+    )
     tracer_provider = TracerProvider(resource=resource)
     otlp_exporter = OTLPSpanExporter(endpoint=settings.observability.otlp_endpoint)
     tracer_provider.add_span_processor(BatchSpanProcessor(otlp_exporter))
@@ -86,7 +89,9 @@ async def add_security_headers_and_trace_id(request: Request, call_next):
     response = await call_next(request)
     elapsed_ms = (time.perf_counter() - start_time) * 1000.0
     response.headers["X-Trace-Id"] = trace_id
-    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    response.headers["Strict-Transport-Security"] = (
+        "max-age=31536000; includeSubDomains"
+    )
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Content-Security-Policy"] = "default-src 'none'"

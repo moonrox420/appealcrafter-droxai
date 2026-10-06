@@ -9,14 +9,12 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timezone
-from typing import Any
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.core.metrics import MODEL_PROMOTIONS, PREDICTION_LATENCY
+from app.core.metrics import MODEL_PROMOTIONS
 from app.models.entities import (
-    DonationHistory,
     Donor,
     ModelVersion,
     ModelVersionStatus,
@@ -51,7 +49,9 @@ class MLFeatureEngine:
                 "rfm_frequency_count": 0,
                 "rfm_monetary_value": 0.0,
             }
-        sorted_history = sorted(history, key=lambda record: record.donated_at, reverse=True)
+        sorted_history = sorted(
+            history, key=lambda record: record.donated_at, reverse=True
+        )
         most_recent = sorted_history[0].donated_at
         recency_days = max(0.0, (datetime.now(timezone.utc) - most_recent).days)
         return {
@@ -65,20 +65,33 @@ class MLFeatureEngine:
         from app.models.entities import Delivery, DeliveryStatus
 
         delivery_total = self.db_session.execute(
-            select(func.count()).select_from(Delivery).join(Delivery.appeal).where(
-                Delivery.appeal.has(donor_id=donor.id)
-            )
+            select(func.count())
+            .select_from(Delivery)
+            .join(Delivery.appeal)
+            .where(Delivery.appeal.has(donor_id=donor.id))
         ).scalar_one()
 
         open_count = self.db_session.execute(
-            select(func.count()).select_from(Delivery).join(Delivery.appeal).where(
+            select(func.count())
+            .select_from(Delivery)
+            .join(Delivery.appeal)
+            .where(
                 Delivery.appeal.has(donor_id=donor.id),
-                Delivery.status.in_([DeliveryStatus.OPENED, DeliveryStatus.CLICKED, DeliveryStatus.CONVERTED]),
+                Delivery.status.in_(
+                    [
+                        DeliveryStatus.OPENED,
+                        DeliveryStatus.CLICKED,
+                        DeliveryStatus.CONVERTED,
+                    ]
+                ),
             )
         ).scalar_one()
 
         click_count = self.db_session.execute(
-            select(func.count()).select_from(Delivery).join(Delivery.appeal).where(
+            select(func.count())
+            .select_from(Delivery)
+            .join(Delivery.appeal)
+            .where(
                 Delivery.appeal.has(donor_id=donor.id),
                 Delivery.status.in_([DeliveryStatus.CLICKED, DeliveryStatus.CONVERTED]),
             )
@@ -86,7 +99,9 @@ class MLFeatureEngine:
 
         engagement_score = 0.0
         if delivery_total > 0:
-            engagement_score = round((open_count * 0.5 + click_count * 1.0) / delivery_total, 4)
+            engagement_score = round(
+                (open_count * 0.5 + click_count * 1.0) / delivery_total, 4
+            )
         return {"engagement_score": engagement_score}
 
 
@@ -96,7 +111,9 @@ class PropensityModelRegistry:
     def __init__(self, db_session: Session) -> None:
         self.db_session = db_session
 
-    def create_model_version(self, model_name: str, version_number: str) -> ModelVersion:
+    def create_model_version(
+        self, model_name: str, version_number: str
+    ) -> ModelVersion:
         """Create a new model version in training status."""
         model_version = ModelVersion(
             model_name=model_name,
@@ -130,7 +147,10 @@ class PropensityModelRegistry:
             return False
         auc = float(model_version.metrics.get("auc", 0.0))
         precision = float(model_version.metrics.get("precision", 0.0))
-        if auc >= PROMOTION_AUC_THRESHOLD and precision >= PROMOTION_PRECISION_THRESHOLD:
+        if (
+            auc >= PROMOTION_AUC_THRESHOLD
+            and precision >= PROMOTION_PRECISION_THRESHOLD
+        ):
             model_version.status = ModelVersionStatus.PROMOTED
             model_version.promoted_at = datetime.now(timezone.utc)
             self.db_session.commit()
@@ -139,7 +159,11 @@ class PropensityModelRegistry:
             return True
         logger.info(
             "Model promotion gate not met",
-            extra={"model_name": model_version.model_name, "auc": auc, "precision": precision},
+            extra={
+                "model_name": model_version.model_name,
+                "auc": auc,
+                "precision": precision,
+            },
         )
         return False
 
@@ -166,11 +190,15 @@ class PredictionService:
 
     def predict_for_donor(self, donor: Donor) -> PredictionRecord:
         """Generate prediction scores for a donor with cached fallback."""
-        current_prediction = self.db_session.execute(
-            select(PredictionRecord)
-            .where(PredictionRecord.donor_id == donor.id)
-            .order_by(PredictionRecord.predicted_at.desc())
-        ).scalars().first()
+        current_prediction = (
+            self.db_session.execute(
+                select(PredictionRecord)
+                .where(PredictionRecord.donor_id == donor.id)
+                .order_by(PredictionRecord.predicted_at.desc())
+            )
+            .scalars()
+            .first()
+        )
         if current_prediction is not None:
             return current_prediction
 
@@ -218,16 +246,26 @@ class PredictionService:
         frequency_score = min(1.0, float(features["rfm_frequency_count"]) / 10.0)
         monetary_score = min(1.0, float(features["rfm_monetary_value"]) / 5000.0)
         engagement_score = float(engagement.get("engagement_score", 0.0))
-        return min(1.0, 0.35 * recency_score + 0.35 * frequency_score + 0.2 * monetary_score + 0.1 * engagement_score)
+        return min(
+            1.0,
+            0.35 * recency_score
+            + 0.35 * frequency_score
+            + 0.2 * monetary_score
+            + 0.1 * engagement_score,
+        )
 
     def train_retrain_model(self, model_name: str, version_number: str) -> ModelVersion:
         """Train a new model version on historical donor data."""
         donors = list(
             self.db_session.execute(
                 select(Donor).where(Donor.is_deleted.is_(False)).limit(1000)
-            ).scalars().all()
+            )
+            .scalars()
+            .all()
         )
-        model_version = self.model_registry.create_model_version(model_name, version_number)
+        model_version = self.model_registry.create_model_version(
+            model_name, version_number
+        )
 
         import random
 
@@ -248,13 +286,18 @@ class PredictionService:
 
         random.shuffle(features)
         split_index = int(len(features) * TRAIN_VALIDATE_TEST_SPLIT[0])
-        validate_index = int(len(features) * (TRAIN_VALIDATE_TEST_SPLIT[0] + TRAIN_VALIDATE_TEST_SPLIT[1]))
+        validate_index = int(
+            len(features)
+            * (TRAIN_VALIDATE_TEST_SPLIT[0] + TRAIN_VALIDATE_TEST_SPLIT[1])
+        )
         train_set = features[:split_index]
         validate_set = features[split_index:validate_index]
         test_set = features[validate_index:]
 
         if not train_set:
-            logger.warning("No training data available for model", extra={"model_name": model_name})
+            logger.warning(
+                "No training data available for model", extra={"model_name": model_name}
+            )
             model_version.status = ModelVersionStatus.RETIRED
             model_version.training_completed_at = datetime.now(timezone.utc)
             self.db_session.commit()
@@ -264,39 +307,102 @@ class PredictionService:
             from sklearn.ensemble import RandomForestClassifier
             from sklearn.metrics import accuracy_score, precision_score, roc_auc_score
 
-            train_x = [[row["recency"], row["frequency"], row["monetary"], row["engagement"]] for row in train_set]
+            train_x = [
+                [row["recency"], row["frequency"], row["monetary"], row["engagement"]]
+                for row in train_set
+            ]
             train_y = [row["target"] for row in train_set]
-            validate_x = [[row["recency"], row["frequency"], row["monetary"], row["engagement"]] for row in validate_set] if validate_set else train_x
-            validate_y = [row["target"] for row in validate_set] if validate_set else train_y
-            test_x = [[row["recency"], row["frequency"], row["monetary"], row["engagement"]] for row in test_set] if test_set else train_x
+            validate_x = (
+                [
+                    [
+                        row["recency"],
+                        row["frequency"],
+                        row["monetary"],
+                        row["engagement"],
+                    ]
+                    for row in validate_set
+                ]
+                if validate_set
+                else train_x
+            )
+            validate_y = (
+                [row["target"] for row in validate_set] if validate_set else train_y
+            )
+            test_x = (
+                [
+                    [
+                        row["recency"],
+                        row["frequency"],
+                        row["monetary"],
+                        row["engagement"],
+                    ]
+                    for row in test_set
+                ]
+                if test_set
+                else train_x
+            )
             test_y = [row["target"] for row in test_set] if test_set else train_y
 
-            classifier = RandomForestClassifier(n_estimators=100, max_depth=5, random_state=42)
+            classifier = RandomForestClassifier(
+                n_estimators=100, max_depth=5, random_state=42
+            )
             classifier.fit(train_x, train_y)
             validate_predictions = classifier.predict(validate_x)
-            validate_probabilities = classifier.predict_proba(validate_x)[:, 1] if len(set(validate_y)) > 1 else validate_predictions
+            validate_probabilities = (
+                classifier.predict_proba(validate_x)[:, 1]
+                if len(set(validate_y)) > 1
+                else validate_predictions
+            )
             test_predictions = classifier.predict(test_x)
 
-            precision = float(precision_score(validate_y, validate_predictions, zero_division=0))
+            precision = float(
+                precision_score(validate_y, validate_predictions, zero_division=0)
+            )
             accuracy = float(accuracy_score(validate_y, validate_predictions))
-            auc = float(roc_auc_score(validate_y, validate_probabilities)) if len(set(validate_y)) > 1 else 0.5
+            auc = (
+                float(roc_auc_score(validate_y, validate_probabilities))
+                if len(set(validate_y)) > 1
+                else 0.5
+            )
 
-            importance = dict(zip(
-                ["recency_days", "frequency_count", "monetary_value", "engagement_score"],
-                [float(value) for value in classifier.feature_importances_],
-            ))
+            importance = dict(
+                zip(
+                    [
+                        "recency_days",
+                        "frequency_count",
+                        "monetary_value",
+                        "engagement_score",
+                    ],
+                    [float(value) for value in classifier.feature_importances_],
+                )
+            )
 
             return self.model_registry.complete_training(
                 model_version,
-                metrics={"auc": auc, "precision": precision, "accuracy": accuracy, "test_size": len(test_x)},
+                metrics={
+                    "auc": auc,
+                    "precision": precision,
+                    "accuracy": accuracy,
+                    "test_size": len(test_x),
+                },
                 feature_importance=importance,
             )
         except ImportError:
             logger.warning("scikit-learn not available; using heuristic metrics")
             return self.model_registry.complete_training(
                 model_version,
-                metrics={"auc": 0.7, "precision": 0.65, "accuracy": 0.7, "test_size": len(test_set)},
-                feature_importance={"recency_days": 0.4, "frequency_count": 0.3, "monetary_value": 0.2, "engagement_score": 0.1},
+                metrics={
+                    "auc": 0.7,
+                    "precision": 0.65,
+                    "accuracy": 0.7,
+                    "test_size": len(test_set),
+                },
+                feature_importance={
+                    "recency_days": 0.4,
+                    "frequency_count": 0.3,
+                    "monetary_value": 0.2,
+                    "engagement_score": 0.1,
+                },
             )
 
     def check_drift(self, model_version: ModelVersion) -> dict[str, float | str]:
@@ -304,10 +410,15 @@ class PredictionService:
         if not model_version.metrics:
             return {"status": "no_metrics", "drift_detected": False}
         expected_auc = float(model_version.metrics.get("auc", 0.5))
-        current_predictions = self.db_session.execute(
-            select(PredictionRecord.propensity_score)
-            .where(PredictionRecord.model_version_id == model_version.id)
-        ).scalars().all()
+        current_predictions = (
+            self.db_session.execute(
+                select(PredictionRecord.propensity_score).where(
+                    PredictionRecord.model_version_id == model_version.id
+                )
+            )
+            .scalars()
+            .all()
+        )
         if not current_predictions:
             return {"status": "no_predictions", "drift_detected": False}
         average_actual = sum(current_predictions) / len(current_predictions)

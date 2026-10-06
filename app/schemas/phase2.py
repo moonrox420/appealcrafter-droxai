@@ -34,7 +34,9 @@ class TemplateCreate(BaseModel):
     subject_template: str = Field(..., min_length=1, max_length=255)
     body_template: str = Field(..., min_length=1)
     cta_template: str = Field(..., min_length=1, max_length=100)
-    tone: str = Field(default="inspiring", pattern="^(inspiring|urgent|grateful|hopeful)$")
+    tone: str = Field(
+        default="inspiring", pattern="^(inspiring|urgent|grateful|hopeful)$"
+    )
     merge_tags: dict = Field(default_factory=dict)
 
 
@@ -44,7 +46,9 @@ class TemplateVersionCreate(BaseModel):
     subject_template: str = Field(..., min_length=1, max_length=255)
     body_template: str = Field(..., min_length=1)
     cta_template: str = Field(..., min_length=1, max_length=100)
-    tone: str = Field(default="inspiring", pattern="^(inspiring|urgent|grateful|hopeful)$")
+    tone: str = Field(
+        default="inspiring", pattern="^(inspiring|urgent|grateful|hopeful)$"
+    )
     change_note: str | None = Field(default=None)
 
 

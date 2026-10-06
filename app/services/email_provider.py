@@ -48,7 +48,9 @@ class EmailProviderService:
         provider = self.settings.email.provider
         if provider == EmailProviderName.LOG_ONLY:
             if self.settings.environment != EnvironmentName.DEVELOPMENT:
-                raise EmailProviderError("LOG_ONLY provider is not permitted outside development.")
+                raise EmailProviderError(
+                    "LOG_ONLY provider is not permitted outside development."
+                )
             logger.info(
                 "Email send simulated",
                 extra={
@@ -57,7 +59,9 @@ class EmailProviderService:
                     "provider": "log_only",
                 },
             )
-            return ProviderSendResult(provider_message_id="log-only", provider_name="log_only")
+            return ProviderSendResult(
+                provider_message_id="log-only", provider_name="log_only"
+            )
         if provider == EmailProviderName.SENDGRID:
             return self._send_via_sendgrid(message)
         if provider == EmailProviderName.POSTMARK:
@@ -83,9 +87,13 @@ class EmailProviderService:
         )
         response = sg_client.send(mail)
         if response.status_code not in (200, 201, 202):
-            raise EmailProviderError(f"SendGrid rejected send with status {response.status_code}")
+            raise EmailProviderError(
+                f"SendGrid rejected send with status {response.status_code}"
+            )
         message_id = response.headers.get("X-Message-Id", "")
-        return ProviderSendResult(provider_message_id=message_id, provider_name="sendgrid")
+        return ProviderSendResult(
+            provider_message_id=message_id, provider_name="sendgrid"
+        )
 
     def _send_via_postmark(self, message: EmailMessage) -> ProviderSendResult:
         """Send via Postmark API."""

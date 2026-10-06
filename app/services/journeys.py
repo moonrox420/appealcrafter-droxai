@@ -10,9 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.models.entities import (
     Appeal,
-    Campaign,
     Delivery,
-    DeliveryStatus,
     Donor,
     Journey,
     JourneyStep,
@@ -98,25 +96,35 @@ class JourneyService:
 
     def get_due_steps(self, journey: Journey, donor: Donor) -> list[JourneyStep]:
         """Return journey steps that are due for a donor."""
-        steps = list(self.db_session.execute(
-            select(JourneyStep)
-            .where(JourneyStep.journey_id == journey.id)
-            .order_by(JourneyStep.step_order)
-        ).scalars().all())
+        steps = list(
+            self.db_session.execute(
+                select(JourneyStep)
+                .where(JourneyStep.journey_id == journey.id)
+                .order_by(JourneyStep.step_order)
+            )
+            .scalars()
+            .all()
+        )
 
         due_steps: list[JourneyStep] = []
         for step in steps:
             if not self.evaluate_condition(step.condition, donor):
                 continue
             if step.delay_days:
-                last_delivery = self.db_session.execute(
-                    select(Delivery)
-                    .join(Appeal, Delivery.appeal_id == Appeal.id)
-                    .where(Appeal.donor_id == donor.id)
-                    .order_by(Delivery.created_at.desc())
-                ).scalars().first()
+                last_delivery = (
+                    self.db_session.execute(
+                        select(Delivery)
+                        .join(Appeal, Delivery.appeal_id == Appeal.id)
+                        .where(Appeal.donor_id == donor.id)
+                        .order_by(Delivery.created_at.desc())
+                    )
+                    .scalars()
+                    .first()
+                )
                 if last_delivery is not None:
-                    eligible_at = last_delivery.created_at + timedelta(days=step.delay_days)
+                    eligible_at = last_delivery.created_at + timedelta(
+                        days=step.delay_days
+                    )
                     if datetime.now(timezone.utc) < eligible_at:
                         continue
             due_steps.append(step)
@@ -131,7 +139,11 @@ class JourneyService:
             )
             return None
 
-        template = self.db_session.get(Template, step.template_id) if step.template_id else None
+        template = (
+            self.db_session.get(Template, step.template_id)
+            if step.template_id
+            else None
+        )
         if template is None:
             logger.warning(
                 "Journey step has no template",
@@ -143,7 +155,9 @@ class JourneyService:
         if template.current_version_id:
             from app.models.entities import TemplateVersion
 
-            current_version = self.db_session.get(TemplateVersion, template.current_version_id)
+            current_version = self.db_session.get(
+                TemplateVersion, template.current_version_id
+            )
 
         if current_version is None:
             logger.warning(

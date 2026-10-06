@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -34,7 +34,14 @@ ml_router = APIRouter(prefix="/ml", tags=["ml"])
 admin_required = require_role(UserRole.ADMIN)
 
 
-@suppression_router.post("", response_model=SuppressionEntryResponse, status_code=status.HTTP_201_CREATED)
+def _val(x: Any) -> str:
+    """Safely return value of enum or string."""
+    return x.value if hasattr(x, "value") else str(x)
+
+
+@suppression_router.post(
+    "", response_model=SuppressionEntryResponse, status_code=status.HTTP_201_CREATED
+)
 def add_suppression_entry(
     payload: SuppressionEntryCreate,
     db_session: Annotated[Session, Depends(get_db_session)],
@@ -90,7 +97,9 @@ def remove_suppression_entry(
     service = SuppressionService(db_session)
     removed = service.remove_suppression_entry(email)
     if not removed:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Suppression entry not found.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Suppression entry not found."
+        )
 
 
 @reporting_router.get("/campaigns/{campaign_id}")
@@ -104,7 +113,9 @@ def get_campaign_report(
     try:
         return service.get_campaign_report(campaign_id)
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
+        ) from exc
 
 
 @reporting_router.get("/deliveries")
@@ -123,7 +134,9 @@ def get_delivery_analytics(
     return service.get_delivery_analytics(start_date=start, end_date=end)
 
 
-@jobs_router.post("/{job_type}", response_model=AsyncJobResponse, status_code=status.HTTP_202_ACCEPTED)
+@jobs_router.post(
+    "/{job_type}", response_model=AsyncJobResponse, status_code=status.HTTP_202_ACCEPTED
+)
 def create_async_job(
     job_type: str,
     db_session: Annotated[Session, Depends(get_db_session)],
@@ -138,7 +151,7 @@ def create_async_job(
     return AsyncJobResponse(
         id=job.id,
         job_type=job.job_type,
-        status=job.status.value,
+        status=_val(job.status),
         total_items=job.total_items,
         completed_items=job.completed_items,
         result_summary=job.result_summary,
@@ -157,11 +170,13 @@ def get_async_job(
     service = AsyncJobService(db_session)
     job = service.get_job(job_id)
     if job is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Job not found."
+        )
     return AsyncJobResponse(
         id=job.id,
         job_type=job.job_type,
-        status=job.status.value,
+        status=_val(job.status),
         total_items=job.total_items,
         completed_items=job.completed_items,
         result_summary=job.result_summary,
@@ -182,7 +197,7 @@ def list_async_jobs(
         AsyncJobResponse(
             id=job.id,
             job_type=job.job_type,
-            status=job.status.value,
+            status=_val(job.status),
             total_items=job.total_items,
             completed_items=job.completed_items,
             result_summary=job.result_summary,
@@ -204,10 +219,14 @@ def export_donor_data(
     try:
         return service.export_donor_data(donor_id)
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
+        ) from exc
 
 
-@compliance_router.post("/donors/{donor_id}/anonymize", response_model=ComplianceActionResponse)
+@compliance_router.post(
+    "/donors/{donor_id}/anonymize", response_model=ComplianceActionResponse
+)
 def anonymize_donor_data(
     donor_id: str,
     db_session: Annotated[Session, Depends(get_db_session)],
@@ -218,7 +237,9 @@ def anonymize_donor_data(
     try:
         service.anonymize_donor(donor_id)
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
+        ) from exc
     return ComplianceActionResponse(status="completed", donor_id=donor_id)
 
 
@@ -233,11 +254,15 @@ def delete_donor_data(
     try:
         service.delete_donor(donor_id)
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
+        ) from exc
     return ComplianceActionResponse(status="completed", donor_id=donor_id)
 
 
-@ml_router.post("/train/{model_name}/{version_number}", response_model=ModelTrainResponse)
+@ml_router.post(
+    "/train/{model_name}/{version_number}", response_model=ModelTrainResponse
+)
 def train_model(
     model_name: str,
     version_number: str,
@@ -252,7 +277,7 @@ def train_model(
         model_version_id=model_version.id,
         model_name=model_version.model_name,
         version_number=model_version.version_number,
-        status=model_version.status.value,
+        status=_val(model_version.status),
         metrics=model_version.metrics,
     )
 
@@ -267,5 +292,7 @@ def check_model_drift(
     service = PredictionService(db_session)
     model_version = service.model_registry.get_promoted_model(model_name)
     if model_version is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No promoted model found.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="No promoted model found."
+        )
     return service.check_drift(model_version)

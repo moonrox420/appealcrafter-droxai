@@ -48,7 +48,9 @@ class TemplateService:
         if self.db_session is not None:
             active_template = self._find_active_template(tone)
             if active_template is not None:
-                content = self._render_template(active_template, donor, tone, first_name, capacity)
+                content = self._render_template(
+                    active_template, donor, tone, first_name, capacity
+                )
                 if content is not None:
                     return content
 
@@ -88,7 +90,9 @@ class TemplateService:
         templates = list(self.db_session.execute(statement).scalars().all())
         for template in templates:
             if template.current_version_id:
-                version = self.db_session.get(TemplateVersion, template.current_version_id)
+                version = self.db_session.get(
+                    TemplateVersion, template.current_version_id
+                )
                 if version is not None and version.tone == tone:
                     return version
         return None
@@ -120,10 +124,16 @@ class TemplateService:
             body = MERGE_TAG_PATTERN.sub(replace_merge_tag, version.body_template)
             cta = MERGE_TAG_PATTERN.sub(replace_merge_tag, version.cta_template)
         except re.error as exc:
-            logger.error("Template rendering failed", extra={"template_id": version.template_id, "error": str(exc)})
+            logger.error(
+                "Template rendering failed",
+                extra={"template_id": version.template_id, "error": str(exc)},
+            )
             return None
 
-        if self.settings.email.physical_address and self.settings.email.physical_address not in body:
+        if (
+            self.settings.email.physical_address
+            and self.settings.email.physical_address not in body
+        ):
             body = f"{body}\n\n{self.settings.email.physical_address}"
         if "unsubscribe" not in body.lower() and "opt out" not in body.lower():
             body = (
@@ -231,12 +241,16 @@ class TemplateManagementService:
         if template is None:
             raise ValueError(f"Template {template_id} not found.")
 
-        version = self.db_session.execute(
-            select(TemplateVersion).where(
-                TemplateVersion.template_id == template_id,
-                TemplateVersion.version_number == version_number,
+        version = (
+            self.db_session.execute(
+                select(TemplateVersion).where(
+                    TemplateVersion.template_id == template_id,
+                    TemplateVersion.version_number == version_number,
+                )
             )
-        ).scalars().first()
+            .scalars()
+            .first()
+        )
         if version is None:
             raise ValueError(f"Template version {version_number} not found.")
 
@@ -247,11 +261,15 @@ class TemplateManagementService:
 
     def list_versions(self, template_id: str) -> list[TemplateVersion]:
         """List all versions of a template in order."""
-        return list(self.db_session.execute(
-            select(TemplateVersion)
-            .where(TemplateVersion.template_id == template_id)
-            .order_by(TemplateVersion.version_number)
-        ).scalars().all())
+        return list(
+            self.db_session.execute(
+                select(TemplateVersion)
+                .where(TemplateVersion.template_id == template_id)
+                .order_by(TemplateVersion.version_number)
+            )
+            .scalars()
+            .all()
+        )
 
 
 def get_template_management_service(db_session: Session) -> TemplateManagementService:

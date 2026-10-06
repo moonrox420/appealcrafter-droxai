@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import json
 import logging
-import time
 from typing import Any
 
 import redis
@@ -100,7 +99,9 @@ class RedisCacheService:
         try:
             return int(self._client.incrby(key, amount))
         except redis.RedisError as exc:
-            logger.warning("Cache increment failed", extra={"key": key, "error": str(exc)})
+            logger.warning(
+                "Cache increment failed", extra={"key": key, "error": str(exc)}
+            )
             return None
 
     def get_hit_rate(self) -> float:

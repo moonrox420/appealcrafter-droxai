@@ -64,7 +64,9 @@ class AsyncJobService:
             raise ValueError(f"Async job {job_id} not found.")
         job.status = AsyncJobStatus.COMPLETED
         job.result_summary = result_summary
-        job.completed_items = completed_items if completed_items is not None else job.total_items
+        job.completed_items = (
+            completed_items if completed_items is not None else job.total_items
+        )
         job.completed_at = datetime.now(timezone.utc)
         self.db_session.commit()
         self.db_session.refresh(job)
@@ -98,12 +100,16 @@ class AsyncJobService:
 
     def list_jobs(self, limit: int = 50, offset: int = 0) -> list[AsyncJob]:
         """Return recent async jobs."""
-        return list(self.db_session.execute(
-            select(AsyncJob)
-            .order_by(AsyncJob.created_at.desc())
-            .limit(limit)
-            .offset(offset)
-        ).scalars().all())
+        return list(
+            self.db_session.execute(
+                select(AsyncJob)
+                .order_by(AsyncJob.created_at.desc())
+                .limit(limit)
+                .offset(offset)
+            )
+            .scalars()
+            .all()
+        )
 
 
 def get_async_job_service(db_session: Session) -> AsyncJobService:

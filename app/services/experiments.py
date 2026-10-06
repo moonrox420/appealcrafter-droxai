@@ -39,26 +39,42 @@ class ExperimentService:
     def __init__(self, db_session: Session) -> None:
         self.db_session = db_session
 
-    def assign_variant(self, experiment: Experiment, subject_key: str) -> ExperimentVariant:
+    def assign_variant(
+        self, experiment: Experiment, subject_key: str
+    ) -> ExperimentVariant:
         """Return a sticky-assigned variant for a subject."""
-        existing_assignment = self.db_session.execute(
-            select(ExperimentAssignment).where(
-                ExperimentAssignment.experiment_id == experiment.id,
-                ExperimentAssignment.subject_key == subject_key,
+        existing_assignment = (
+            self.db_session.execute(
+                select(ExperimentAssignment).where(
+                    ExperimentAssignment.experiment_id == experiment.id,
+                    ExperimentAssignment.subject_key == subject_key,
+                )
             )
-        ).scalars().first()
+            .scalars()
+            .first()
+        )
 
         if existing_assignment is not None:
-            return self.db_session.get(ExperimentVariant, existing_assignment.variant_id)
+            return self.db_session.get(
+                ExperimentVariant, existing_assignment.variant_id
+            )
 
-        variants = list(self.db_session.execute(
-            select(ExperimentVariant).where(ExperimentVariant.experiment_id == experiment.id)
-        ).scalars().all())
+        variants = list(
+            self.db_session.execute(
+                select(ExperimentVariant).where(
+                    ExperimentVariant.experiment_id == experiment.id
+                )
+            )
+            .scalars()
+            .all()
+        )
         if not variants:
             raise ValueError(f"Experiment {experiment.id} has no variants.")
 
         total_weight = sum(variant.weight for variant in variants)
-        hash_digest = hashlib.sha256(f"{experiment.id}:{subject_key}".encode("utf-8")).hexdigest()
+        hash_digest = hashlib.sha256(
+            f"{experiment.id}:{subject_key}".encode()
+        ).hexdigest()
         hash_value = int(hash_digest[:16], 16) / 0xFFFFFFFFFFFFFFFF
         threshold = hash_value * total_weight
 
@@ -83,9 +99,15 @@ class ExperimentService:
 
     def compute_statistical_results(self, experiment: Experiment) -> dict:
         """Compute conversion statistics with confidence intervals."""
-        variants = list(self.db_session.execute(
-            select(ExperimentVariant).where(ExperimentVariant.experiment_id == experiment.id)
-        ).scalars().all())
+        variants = list(
+            self.db_session.execute(
+                select(ExperimentVariant).where(
+                    ExperimentVariant.experiment_id == experiment.id
+                )
+            )
+            .scalars()
+            .all()
+        )
 
         variant_stats: list[dict] = []
         for variant in variants:
@@ -94,7 +116,15 @@ class ExperimentService:
                 .join(Appeal, Delivery.appeal_id == Appeal.id)
                 .where(
                     Appeal.experiment_variant_id == variant.id,
-                    Delivery.status.in_([DeliveryStatus.SENT, DeliveryStatus.DELIVERED, DeliveryStatus.OPENED, DeliveryStatus.CLICKED, DeliveryStatus.CONVERTED]),
+                    Delivery.status.in_(
+                        [
+                            DeliveryStatus.SENT,
+                            DeliveryStatus.DELIVERED,
+                            DeliveryStatus.OPENED,
+                            DeliveryStatus.CLICKED,
+                            DeliveryStatus.CONVERTED,
+                        ]
+                    ),
                 )
             ).scalar_one()
 
@@ -107,25 +137,35 @@ class ExperimentService:
                 )
             ).scalar_one()
 
-            conversion_rate = (converted_deliveries / total_deliveries) if total_deliveries > 0 else 0.0
+            conversion_rate = (
+                (converted_deliveries / total_deliveries)
+                if total_deliveries > 0
+                else 0.0
+            )
             standard_error = (
                 (conversion_rate * (1.0 - conversion_rate) / total_deliveries) ** 0.5
-                if total_deliveries > 0 else 0.0
+                if total_deliveries > 0
+                else 0.0
             )
             confidence_interval = (
                 round(conversion_rate - 1.96 * standard_error, 4),
                 round(conversion_rate + 1.96 * standard_error, 4),
             )
-            variant_stats.append({
-                "variant_id": variant.id,
-                "variant_name": variant.name,
-                "total_deliveries": total_deliveries,
-                "converted_deliveries": converted_deliveries,
-                "conversion_rate": round(conversion_rate, 4),
-                "confidence_interval": confidence_interval,
-            })
+            variant_stats.append(
+                {
+                    "variant_id": variant.id,
+                    "variant_name": variant.name,
+                    "total_deliveries": total_deliveries,
+                    "converted_deliveries": converted_deliveries,
+                    "conversion_rate": round(conversion_rate, 4),
+                    "confidence_interval": confidence_interval,
+                }
+            )
 
-        control_stats = next((stats for stats in variant_stats if stats["variant_name"] == "control"), None)
+        control_stats = next(
+            (stats for stats in variant_stats if stats["variant_name"] == "control"),
+            None,
+        )
         results: dict = {"variants": variant_stats}
 
         if len(variant_stats) >= 2 and control_stats is not None:
@@ -146,13 +186,20 @@ class ExperimentService:
                 if stats["total_deliveries"] < MIN_SAMPLE_SIZE_PER_VARIANT:
                     logger.info(
                         "Experiment variant below minimum sample size",
-                        extra={"variant_id": stats["variant_id"], "sample_size": stats["total_deliveries"]},
+                        extra={
+                            "variant_id": stats["variant_id"],
+                            "sample_size": stats["total_deliveries"],
+                        },
                     )
             results["p_values"] = p_values
             results["significant_winners"] = winners
 
         experiment.confidence_level = round(1.0 - DEFAULT_SIGNIFICANCE_LEVEL, 4)
-        experiment.p_value = min(results.get("p_values", {}).values()) if results.get("p_values") else None
+        experiment.p_value = (
+            min(results.get("p_values", {}).values())
+            if results.get("p_values")
+            else None
+        )
         self.db_session.commit()
         return results
 
@@ -166,7 +213,9 @@ class ExperimentService:
         """Compute a two-tailed z-test p-value for two proportions."""
         if control_n == 0 or variant_n == 0:
             return 1.0
-        pooled_proportion = ((control_rate * control_n) + (variant_rate * variant_n)) / (control_n + variant_n)
+        pooled_proportion = (
+            (control_rate * control_n) + (variant_rate * variant_n)
+        ) / (control_n + variant_n)
         standard_error = (
             pooled_proportion
             * (1.0 - pooled_proportion)
@@ -177,7 +226,9 @@ class ExperimentService:
         z_score = (variant_rate - control_rate) / standard_error
         return round(2.0 * (1.0 - NormalDist().cdf(abs(z_score))), 4)
 
-    def promote_winning_variant(self, experiment: Experiment, variant_id: str) -> Experiment:
+    def promote_winning_variant(
+        self, experiment: Experiment, variant_id: str
+    ) -> Experiment:
         """Promote a winning variant with an audit trail."""
         variant = self.db_session.get(ExperimentVariant, variant_id)
         if variant is None:

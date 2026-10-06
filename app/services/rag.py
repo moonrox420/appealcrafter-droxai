@@ -60,9 +60,13 @@ class EmbeddingProvider:
             try:
                 from sentence_transformers import SentenceTransformer
 
-                self._model = SentenceTransformer(self.settings.llm.embedding_model_name)
+                self._model = SentenceTransformer(
+                    self.settings.llm.embedding_model_name
+                )
             except ImportError:
-                logger.warning("sentence-transformers not installed; using fallback hashing embeddings")
+                logger.warning(
+                    "sentence-transformers not installed; using fallback hashing embeddings"
+                )
                 return [self._fallback_embedding(text) for text in texts]
         embeddings = self._model.encode(texts, normalize_embeddings=True)
         return [embedding.tolist() for embedding in embeddings]
@@ -71,7 +75,7 @@ class EmbeddingProvider:
         """Generate a deterministic hashing-based fallback embedding vector."""
         vector: list[float] = []
         for index in range(self.settings.llm.embedding_dimensions):
-            digest = hashlib.sha256(f"{text}:{index}".encode("utf-8")).hexdigest()
+            digest = hashlib.sha256(f"{text}:{index}".encode()).hexdigest()
             value = int(digest[:8], 16) / 0xFFFFFFFF
             vector.append(value * 2.0 - 1.0)
         return vector
@@ -163,22 +167,36 @@ class RagPipeline:
             .join(KnowledgeDocument, DocumentChunk.document_id == KnowledgeDocument.id)
             .where(
                 KnowledgeDocument.is_approved.is_(True),
-                or_(*(DocumentChunk.content.ilike(f"%{term}%") for term in query_terms)),
+                or_(
+                    *(DocumentChunk.content.ilike(f"%{term}%") for term in query_terms)
+                ),
             )
             .limit(limit * 2)
         ).all()
 
         merged_chunks: dict[str, RetrievedChunk] = {}
         for semantic_chunk in semantic_results:
-            distance = semantic_chunk.embedding_vector.cosine_distance(query_embedding) if semantic_chunk.embedding_vector else 1.0
+            distance = (
+                semantic_chunk.embedding_vector.cosine_distance(query_embedding)
+                if semantic_chunk.embedding_vector
+                else 1.0
+            )
             similarity_score = max(0.0, 1.0 - float(distance))
             merged_chunks[semantic_chunk.id] = RetrievedChunk(
                 chunk_id=semantic_chunk.id,
                 document_id=semantic_chunk.document_id,
-                document_title=semantic_chunk.document.title if semantic_chunk.document else semantic_chunk.document_id,
+                document_title=(
+                    semantic_chunk.document.title
+                    if semantic_chunk.document
+                    else semantic_chunk.document_id
+                ),
                 content=semantic_chunk.content,
                 similarity_score=similarity_score,
-                source_url=semantic_chunk.document.source_url if semantic_chunk.document else None,
+                source_url=(
+                    semantic_chunk.document.source_url
+                    if semantic_chunk.document
+                    else None
+                ),
             )
 
         for keyword_chunk in keyword_results:
@@ -197,10 +215,18 @@ class RagPipeline:
                 merged_chunks[keyword_chunk.id] = RetrievedChunk(
                     chunk_id=keyword_chunk.id,
                     document_id=keyword_chunk.document_id,
-                    document_title=keyword_chunk.document.title if keyword_chunk.document else keyword_chunk.document_id,
+                    document_title=(
+                        keyword_chunk.document.title
+                        if keyword_chunk.document
+                        else keyword_chunk.document_id
+                    ),
                     content=keyword_chunk.content,
                     similarity_score=0.5,
-                    source_url=keyword_chunk.document.source_url if keyword_chunk.document else None,
+                    source_url=(
+                        keyword_chunk.document.source_url
+                        if keyword_chunk.document
+                        else None
+                    ),
                 )
 
         ranked_chunks = sorted(

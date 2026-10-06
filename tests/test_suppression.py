@@ -14,18 +14,7 @@ from app.models.entities import Appeal, Delivery, DeliveryStatus, Donor, Unsubsc
 from app.services.suppression import SuppressionService
 
 
-@pytest.fixture()
-def db_session() -> Session:
-    """Create a PostgreSQL test database session."""
-    settings = get_settings()
-    engine = create_engine(settings.database.sqlalchemy_url)
-    Base.metadata.drop_all(engine)
-    Base.metadata.create_all(engine)
-    session_factory = sessionmaker(bind=engine)
-    session = session_factory()
-    yield session
-    session.close()
-    engine.dispose()
+
 
 
 def test_suppressed_email_blocked(db_session: Session) -> None:

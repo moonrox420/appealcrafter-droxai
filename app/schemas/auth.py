@@ -9,7 +9,9 @@ class LoginRequest(BaseModel):
     """Login credentials payload."""
 
     email: EmailStr = Field(..., description="User email address.")
-    password: str = Field(..., min_length=8, max_length=128, description="User password.")
+    password: str = Field(
+        ..., min_length=8, max_length=128, description="User password."
+    )
 
 
 class RefreshRequest(BaseModel):
@@ -30,5 +32,9 @@ class UserCreate(BaseModel):
     """Admin-created user payload."""
 
     email: EmailStr = Field(..., description="New user email address.")
-    password: str = Field(..., min_length=8, max_length=128, description="New user password.")
-    role: str = Field(default="operator", pattern="^(admin|operator)$", description="RBAC role.")
+    password: str = Field(
+        ..., min_length=8, max_length=128, description="New user password."
+    )
+    role: str = Field(
+        default="operator", pattern="^(admin|operator)$", description="RBAC role."
+    )

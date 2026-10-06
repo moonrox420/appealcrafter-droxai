@@ -25,14 +25,22 @@ class ReportingService:
         if campaign is None:
             raise ValueError(f"Campaign {campaign_id} not found.")
 
-        appeal_ids = self.db_session.execute(
-            select(Appeal.id).where(Appeal.campaign_id == campaign_id)
-        ).scalars().all()
+        appeal_ids = (
+            self.db_session.execute(
+                select(Appeal.id).where(Appeal.campaign_id == campaign_id)
+            )
+            .scalars()
+            .all()
+        )
 
         if appeal_ids:
-            deliveries = list(self.db_session.execute(
-                select(Delivery).where(Delivery.appeal_id.in_(appeal_ids))
-            ).scalars().all())
+            deliveries = list(
+                self.db_session.execute(
+                    select(Delivery).where(Delivery.appeal_id.in_(appeal_ids))
+                )
+                .scalars()
+                .all()
+            )
         else:
             deliveries = []
 
@@ -60,12 +68,36 @@ class ReportingService:
             "converted": total_converted,
             "bounced": total_bounced,
             "unsubscribed": total_unsubscribed,
-            "delivery_rate": round((total_delivered / total_sends) * 100.0, 2) if total_sends > 0 else 0.0,
-            "open_rate": round((total_opened / total_sends) * 100.0, 2) if total_sends > 0 else 0.0,
-            "click_rate": round((total_clicked / total_sends) * 100.0, 2) if total_sends > 0 else 0.0,
-            "conversion_rate": round((total_converted / total_sends) * 100.0, 2) if total_sends > 0 else 0.0,
-            "bounce_rate": round((total_bounced / total_sends) * 100.0, 2) if total_sends > 0 else 0.0,
-            "unsubscribe_rate": round((total_unsubscribed / total_sends) * 100.0, 2) if total_sends > 0 else 0.0,
+            "delivery_rate": (
+                round((total_delivered / total_sends) * 100.0, 2)
+                if total_sends > 0
+                else 0.0
+            ),
+            "open_rate": (
+                round((total_opened / total_sends) * 100.0, 2)
+                if total_sends > 0
+                else 0.0
+            ),
+            "click_rate": (
+                round((total_clicked / total_sends) * 100.0, 2)
+                if total_sends > 0
+                else 0.0
+            ),
+            "conversion_rate": (
+                round((total_converted / total_sends) * 100.0, 2)
+                if total_sends > 0
+                else 0.0
+            ),
+            "bounce_rate": (
+                round((total_bounced / total_sends) * 100.0, 2)
+                if total_sends > 0
+                else 0.0
+            ),
+            "unsubscribe_rate": (
+                round((total_unsubscribed / total_sends) * 100.0, 2)
+                if total_sends > 0
+                else 0.0
+            ),
         }
 
     def get_delivery_analytics(
@@ -89,8 +121,23 @@ class ReportingService:
         for delivery in deliveries:
             day_key = delivery.created_at.date().isoformat()
             if day_key not in daily_counts:
-                daily_counts[day_key] = {"sent": 0, "delivered": 0, "opened": 0, "clicked": 0, "converted": 0, "bounced": 0, "unsubscribed": 0}
-            daily_counts[day_key][delivery.status.value] = daily_counts[day_key].get(delivery.status.value, 0) + 1
+                daily_counts[day_key] = {
+                    "sent": 0,
+                    "delivered": 0,
+                    "opened": 0,
+                    "clicked": 0,
+                    "converted": 0,
+                    "bounced": 0,
+                    "unsubscribed": 0,
+                }
+            status_key = (
+                delivery.status.value
+                if hasattr(delivery.status, "value")
+                else str(delivery.status)
+            )
+            daily_counts[day_key][status_key] = (
+                daily_counts[day_key].get(status_key, 0) + 1
+            )
 
         return {
             "start_date": start_date.isoformat(),

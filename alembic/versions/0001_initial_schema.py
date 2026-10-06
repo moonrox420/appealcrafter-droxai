@@ -10,6 +10,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 import sqlalchemy as sa
+
 from alembic import op
 
 revision: str = "0001"
@@ -26,7 +27,9 @@ def upgrade() -> None:
         sa.Column("email", sa.String(255), nullable=False, unique=True),
         sa.Column("password_hash", sa.String(255), nullable=False),
         sa.Column("role", sa.String(20), nullable=False),
-        sa.Column("is_active", sa.Boolean(), nullable=False, server_default=sa.text("true")),
+        sa.Column(
+            "is_active", sa.Boolean(), nullable=False, server_default=sa.text("true")
+        ),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
     )
@@ -37,7 +40,9 @@ def upgrade() -> None:
         sa.Column("id", sa.String(36), primary_key=True),
         sa.Column("name", sa.String(255), nullable=False),
         sa.Column("description", sa.Text(), nullable=True),
-        sa.Column("is_active", sa.Boolean(), nullable=False, server_default=sa.text("true")),
+        sa.Column(
+            "is_active", sa.Boolean(), nullable=False, server_default=sa.text("true")
+        ),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
     )
@@ -54,7 +59,9 @@ def upgrade() -> None:
         sa.Column("capacity_score", sa.Float(), nullable=True),
         sa.Column("consent_given_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("consent_source", sa.String(100), nullable=True),
-        sa.Column("is_deleted", sa.Boolean(), nullable=False, server_default=sa.text("false")),
+        sa.Column(
+            "is_deleted", sa.Boolean(), nullable=False, server_default=sa.text("false")
+        ),
         sa.Column("deleted_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
@@ -66,26 +73,44 @@ def upgrade() -> None:
     op.create_table(
         "donation_history",
         sa.Column("id", sa.String(36), primary_key=True),
-        sa.Column("donor_id", sa.String(36), sa.ForeignKey("donors.id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "donor_id",
+            sa.String(36),
+            sa.ForeignKey("donors.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.Column("amount", sa.Float(), nullable=False),
         sa.Column("donated_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("campaign_id", sa.String(36), sa.ForeignKey("campaigns.id"), nullable=True),
+        sa.Column(
+            "campaign_id", sa.String(36), sa.ForeignKey("campaigns.id"), nullable=True
+        ),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
     )
     op.create_index("ix_donation_history_donor_id", "donation_history", ["donor_id"])
-    op.create_index("ix_donation_history_donor_date", "donation_history", ["donor_id", "donated_at"])
+    op.create_index(
+        "ix_donation_history_donor_date", "donation_history", ["donor_id", "donated_at"]
+    )
 
     op.create_table(
         "appeals",
         sa.Column("id", sa.String(36), primary_key=True),
-        sa.Column("donor_id", sa.String(36), sa.ForeignKey("donors.id"), nullable=False),
-        sa.Column("campaign_id", sa.String(36), sa.ForeignKey("campaigns.id"), nullable=True),
+        sa.Column(
+            "donor_id", sa.String(36), sa.ForeignKey("donors.id"), nullable=False
+        ),
+        sa.Column(
+            "campaign_id", sa.String(36), sa.ForeignKey("campaigns.id"), nullable=True
+        ),
         sa.Column("subject", sa.String(255), nullable=False),
         sa.Column("body", sa.Text(), nullable=False),
         sa.Column("cta", sa.String(100), nullable=False),
         sa.Column("tone", sa.String(20), nullable=False, server_default="inspiring"),
         sa.Column("capacity_score", sa.Float(), nullable=True),
-        sa.Column("is_template_fallback", sa.Boolean(), nullable=False, server_default=sa.text("false")),
+        sa.Column(
+            "is_template_fallback",
+            sa.Boolean(),
+            nullable=False,
+            server_default=sa.text("false"),
+        ),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
     )
     op.create_index("ix_appeals_donor_id", "appeals", ["donor_id"])
@@ -94,7 +119,9 @@ def upgrade() -> None:
     op.create_table(
         "deliveries",
         sa.Column("id", sa.String(36), primary_key=True),
-        sa.Column("appeal_id", sa.String(36), sa.ForeignKey("appeals.id"), nullable=False),
+        sa.Column(
+            "appeal_id", sa.String(36), sa.ForeignKey("appeals.id"), nullable=False
+        ),
         sa.Column("recipient_email", sa.String(255), nullable=False),
         sa.Column("provider_message_id", sa.String(255), nullable=True),
         sa.Column("status", sa.String(20), nullable=False, server_default="queued"),
@@ -111,8 +138,12 @@ def upgrade() -> None:
     )
     op.create_index("ix_deliveries_appeal_id", "deliveries", ["appeal_id"])
     op.create_index("ix_deliveries_recipient_email", "deliveries", ["recipient_email"])
-    op.create_index("ix_deliveries_provider_message_id", "deliveries", ["provider_message_id"])
-    op.create_index("ix_deliveries_status_created", "deliveries", ["status", "created_at"])
+    op.create_index(
+        "ix_deliveries_provider_message_id", "deliveries", ["provider_message_id"]
+    )
+    op.create_index(
+        "ix_deliveries_status_created", "deliveries", ["status", "created_at"]
+    )
 
     op.create_table(
         "unsubscribes",
@@ -133,7 +164,9 @@ def upgrade() -> None:
         sa.Column("title", sa.String(255), nullable=False),
         sa.Column("content", sa.Text(), nullable=False),
         sa.Column("source_url", sa.String(500), nullable=True),
-        sa.Column("is_approved", sa.Boolean(), nullable=False, server_default=sa.text("false")),
+        sa.Column(
+            "is_approved", sa.Boolean(), nullable=False, server_default=sa.text("false")
+        ),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
     )
@@ -141,14 +174,23 @@ def upgrade() -> None:
     op.create_table(
         "document_chunks",
         sa.Column("id", sa.String(36), primary_key=True),
-        sa.Column("document_id", sa.String(36), sa.ForeignKey("knowledge_documents.id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "document_id",
+            sa.String(36),
+            sa.ForeignKey("knowledge_documents.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.Column("chunk_index", sa.Integer(), nullable=False),
         sa.Column("content", sa.Text(), nullable=False),
         sa.Column("embedding_vector", sa.Text(), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-        sa.UniqueConstraint("document_id", "chunk_index", name="uq_document_chunk_index"),
+        sa.UniqueConstraint(
+            "document_id", "chunk_index", name="uq_document_chunk_index"
+        ),
     )
-    op.create_index("ix_document_chunks_document_id", "document_chunks", ["document_id"])
+    op.create_index(
+        "ix_document_chunks_document_id", "document_chunks", ["document_id"]
+    )
 
 
 def downgrade() -> None:

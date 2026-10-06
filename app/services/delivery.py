@@ -10,7 +10,11 @@ from sqlalchemy.orm import Session
 
 from app.core.metrics import DELIVERY_RATE
 from app.models.entities import Delivery, DeliveryStatus, Unsubscribe
-from app.services.email_provider import EmailMessage, EmailProviderService, ProviderSendResult
+from app.services.email_provider import (
+    EmailMessage,
+    EmailProviderService,
+    ProviderSendResult,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +26,9 @@ class DeliveryService:
         self.db_session = db_session
         self.email_provider = EmailProviderService()
 
-    def create_delivery(self, appeal_id: str, recipient_email: str, provider: str) -> Delivery:
+    def create_delivery(
+        self, appeal_id: str, recipient_email: str, provider: str
+    ) -> Delivery:
         """Create a queued delivery record."""
         delivery = Delivery(
             appeal_id=appeal_id,
@@ -59,7 +65,12 @@ class DeliveryService:
             )
         self.db_session.commit()
         self.db_session.refresh(delivery)
-        DELIVERY_RATE.labels(status=delivery.status.value).inc()
+        status_val = (
+            delivery.status.value
+            if hasattr(delivery.status, "value")
+            else str(delivery.status)
+        )
+        DELIVERY_RATE.labels(status=status_val).inc()
         return delivery
 
     def process_webhook_event(
@@ -110,7 +121,12 @@ class DeliveryService:
 
         self.db_session.commit()
         self.db_session.refresh(delivery)
-        DELIVERY_RATE.labels(status=delivery.status.value).inc()
+        status_val = (
+            delivery.status.value
+            if hasattr(delivery.status, "value")
+            else str(delivery.status)
+        )
+        DELIVERY_RATE.labels(status=status_val).inc()
         return delivery
 
     def _record_unsubscribe(self, email: str, source: str) -> None:

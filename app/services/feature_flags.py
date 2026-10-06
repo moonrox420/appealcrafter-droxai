@@ -9,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.cache import RedisCacheService
-from app.models.entities import FeatureFlag, FeatureFlagStatus, Tenant
+from app.models.entities import FeatureFlag, FeatureFlagStatus
 
 logger = logging.getLogger(__name__)
 
@@ -17,11 +17,18 @@ logger = logging.getLogger(__name__)
 class FeatureFlagService:
     """Evaluate feature flags with percentage-based rollout."""
 
-    def __init__(self, db_session: Session, cache_service: RedisCacheService | None = None) -> None:
+    def __init__(
+        self, db_session: Session, cache_service: RedisCacheService | None = None
+    ) -> None:
         self.db_session = db_session
         self.cache_service = cache_service or RedisCacheService()
 
-    def is_enabled(self, flag_name: str, tenant_id: str | None = None, subject_key: str | None = None) -> bool:
+    def is_enabled(
+        self,
+        flag_name: str,
+        tenant_id: str | None = None,
+        subject_key: str | None = None,
+    ) -> bool:
         """Return whether a feature flag is enabled for the given context."""
         cache_key = f"feature_flag:{tenant_id or 'global'}:{flag_name}"
         cached_value = self.cache_service.get(cache_key)
@@ -35,7 +42,13 @@ class FeatureFlagService:
             )
         else:
             statement = statement.where(FeatureFlag.tenant_id.is_(None))
-        flag = self.db_session.execute(statement.order_by(FeatureFlag.tenant_id).desc()).scalars().first()
+        flag = (
+            self.db_session.execute(
+                statement.order_by(FeatureFlag.tenant_id.desc().nulls_last())
+            )
+            .scalars()
+            .first()
+        )
 
         if flag is None:
             return False
@@ -56,7 +69,9 @@ class FeatureFlagService:
             if not subject_key:
                 self.cache_service.set(cache_key, False)
                 return False
-            hash_digest = hashlib.sha256(f"{flag.id}:{subject_key}".encode("utf-8")).hexdigest()
+            hash_digest = hashlib.sha256(
+                f"{flag.id}:{subject_key}".encode()
+            ).hexdigest()
             hash_value = int(hash_digest[:16], 16) / 0xFFFFFFFFFFFFFFFF
             enabled = (hash_value * 100.0) < flag.rollout_percent
             self.cache_service.set(cache_key, enabled)
@@ -64,14 +79,22 @@ class FeatureFlagService:
 
         return False
 
-    def get_flag(self, flag_name: str, tenant_id: str | None = None) -> FeatureFlag | None:
+    def get_flag(
+        self, flag_name: str, tenant_id: str | None = None
+    ) -> FeatureFlag | None:
         """Return a feature flag record."""
         statement = select(FeatureFlag).where(FeatureFlag.name == flag_name)
         if tenant_id is not None:
             statement = statement.where(
                 (FeatureFlag.tenant_id == tenant_id) | (FeatureFlag.tenant_id.is_(None))
             )
-        return self.db_session.execute(statement.order_by(FeatureFlag.tenant_id.desc())).scalars().first()
+        return (
+            self.db_session.execute(
+                statement.order_by(FeatureFlag.tenant_id.desc().nulls_last())
+            )
+            .scalars()
+            .first()
+        )
 
 
 def get_feature_flag_service(db_session: Session) -> FeatureFlagService:

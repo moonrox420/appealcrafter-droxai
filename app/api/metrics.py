@@ -15,20 +15,21 @@ from app.models.entities import Delivery, DeliveryStatus, User
 router = APIRouter(prefix="/metrics", tags=["metrics"])
 
 
-@router.get("")
+@router.get("/summary")
+@router.get("/operational")
 def get_metrics(
     db_session: Annotated[Session, Depends(get_db_session)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> dict:
     """Return basic operational metrics."""
-    total_deliveries = db_session.execute(
-        select(func.count(Delivery.id))
-    ).scalar_one()
+    total_deliveries = db_session.execute(select(func.count(Delivery.id))).scalar_one()
     sent_count = db_session.execute(
         select(func.count(Delivery.id)).where(Delivery.status == DeliveryStatus.SENT)
     ).scalar_one()
     delivered_count = db_session.execute(
-        select(func.count(Delivery.id)).where(Delivery.status == DeliveryStatus.DELIVERED)
+        select(func.count(Delivery.id)).where(
+            Delivery.status == DeliveryStatus.DELIVERED
+        )
     ).scalar_one()
     bounced_count = db_session.execute(
         select(func.count(Delivery.id)).where(Delivery.status == DeliveryStatus.BOUNCED)
@@ -37,7 +38,9 @@ def get_metrics(
         select(func.count(Delivery.id)).where(Delivery.status == DeliveryStatus.FAILED)
     ).scalar_one()
 
-    error_rate = (failed_count / total_deliveries * 100.0) if total_deliveries > 0 else 0.0
+    error_rate = (
+        (failed_count / total_deliveries * 100.0) if total_deliveries > 0 else 0.0
+    )
 
     return {
         "total_deliveries": total_deliveries,
