@@ -47,5 +47,7 @@ async def test_prometheus_metrics_endpoint_output() -> None:
     """Verify prometheus_metrics_endpoint produces Prometheus text."""
     resp = await prometheus_metrics_endpoint()
     assert resp.status_code == 200
-    assert resp.media_type.startswith("text/plain") or "version=0.0.4" in resp.media_type
+    assert (
+        resp.media_type.startswith("text/plain") or "version=0.0.4" in resp.media_type
+    )
     assert b"appealcrafter_http_requests_total" in resp.body

@@ -10,7 +10,9 @@ from app.main import unhandled_exception_handler
 
 
 @pytest.mark.asyncio
-async def test_security_headers_present_on_all_responses(async_client: AsyncClient) -> None:
+async def test_security_headers_present_on_all_responses(
+    async_client: AsyncClient,
+) -> None:
     """Verify HSTS, nosniff, DENY, CSP, and X-Trace-Id headers are present."""
     response = await async_client.get("/health")
     assert response.status_code == 200
@@ -24,7 +26,9 @@ async def test_security_headers_present_on_all_responses(async_client: AsyncClie
 @pytest.mark.asyncio
 async def test_unhandled_exception_handler_returns_safe_500() -> None:
     """Verify unhandled_exception_handler returns generic JSON error without leaking trace."""
-    mock_request = Request({"type": "http", "method": "GET", "path": "/crash", "headers": []})
+    mock_request = Request(
+        {"type": "http", "method": "GET", "path": "/crash", "headers": []}
+    )
     mock_exc = RuntimeError("Secret database connection string leaked!")
 
     resp = await unhandled_exception_handler(mock_request, mock_exc)

@@ -48,10 +48,14 @@ def test_log_only_provider_blocked_in_production(sample_message: EmailMessage) -
 def test_sendgrid_provider_success(sample_message: EmailMessage) -> None:
     """Verify SendGrid provider calls SendGridAPIClient and formats response."""
     service = EmailProviderService()
-    with patch.object(service.settings.email, "provider", EmailProviderName.SENDGRID), \
-         patch.object(service.settings.email, "sendgrid_api_key", "SG.test-key-12345"), \
-         patch("sendgrid.SendGridAPIClient") as mock_sg_client:
-        
+    with patch.object(
+        service.settings.email, "provider", EmailProviderName.SENDGRID
+    ), patch.object(
+        service.settings.email, "sendgrid_api_key", "SG.test-key-12345"
+    ), patch(
+        "sendgrid.SendGridAPIClient"
+    ) as mock_sg_client:
+
         mock_instance = MagicMock()
         mock_resp = MagicMock()
         mock_resp.status_code = 202
@@ -79,10 +83,12 @@ def test_sendgrid_provider_missing_key(sample_message: EmailMessage) -> None:
 def test_sendgrid_provider_rejected(sample_message: EmailMessage) -> None:
     """Verify SendGrid raises error when provider returns 400 error status."""
     service = EmailProviderService()
-    with patch.object(service.settings.email, "provider", EmailProviderName.SENDGRID), \
-         patch.object(service.settings.email, "sendgrid_api_key", "SG.test-key"), \
-         patch("sendgrid.SendGridAPIClient") as mock_sg_client:
-        
+    with patch.object(
+        service.settings.email, "provider", EmailProviderName.SENDGRID
+    ), patch.object(service.settings.email, "sendgrid_api_key", "SG.test-key"), patch(
+        "sendgrid.SendGridAPIClient"
+    ) as mock_sg_client:
+
         mock_instance = MagicMock()
         mock_resp = MagicMock()
         mock_resp.status_code = 400
@@ -96,10 +102,14 @@ def test_sendgrid_provider_rejected(sample_message: EmailMessage) -> None:
 def test_postmark_provider_success(sample_message: EmailMessage) -> None:
     """Verify Postmark provider sends POST request with token and extracts message ID."""
     service = EmailProviderService()
-    with patch.object(service.settings.email, "provider", EmailProviderName.POSTMARK), \
-         patch.object(service.settings.email, "postmark_server_token", "pm-token-123"), \
-         patch("httpx.post") as mock_post:
-        
+    with patch.object(
+        service.settings.email, "provider", EmailProviderName.POSTMARK
+    ), patch.object(
+        service.settings.email, "postmark_server_token", "pm-token-123"
+    ), patch(
+        "httpx.post"
+    ) as mock_post:
+
         mock_resp = MagicMock()
         mock_resp.raise_for_status.return_value = None
         mock_resp.json.return_value = {"MessageID": "pm-msg-777"}
@@ -117,7 +127,9 @@ def test_postmark_provider_missing_token(sample_message: EmailMessage) -> None:
     with (
         patch.object(service.settings.email, "provider", EmailProviderName.POSTMARK),
         patch.object(service.settings.email, "postmark_server_token", None),
-        pytest.raises(EmailProviderError, match="Postmark server token is not configured"),
+        pytest.raises(
+            EmailProviderError, match="Postmark server token is not configured"
+        ),
     ):
         service.send(sample_message)
 
@@ -125,12 +137,18 @@ def test_postmark_provider_missing_token(sample_message: EmailMessage) -> None:
 def test_ses_provider_success(sample_message: EmailMessage) -> None:
     """Verify AWS SES provider invokes boto3 client and returns SES MessageId."""
     service = EmailProviderService()
-    with patch.object(service.settings.email, "provider", EmailProviderName.SES), \
-         patch.object(service.settings.email, "ses_access_key_id", "AKIA123"), \
-         patch.object(service.settings.email, "ses_secret_access_key", "secret123"), \
-         patch.object(service.settings.email, "ses_region", "us-east-1"), \
-         patch("boto3.client") as mock_boto:
-        
+    with patch.object(
+        service.settings.email, "provider", EmailProviderName.SES
+    ), patch.object(
+        service.settings.email, "ses_access_key_id", "AKIA123"
+    ), patch.object(
+        service.settings.email, "ses_secret_access_key", "secret123"
+    ), patch.object(
+        service.settings.email, "ses_region", "us-east-1"
+    ), patch(
+        "boto3.client"
+    ) as mock_boto:
+
         mock_ses = MagicMock()
         mock_ses.send_email.return_value = {"MessageId": "ses-msg-555"}
         mock_boto.return_value = mock_ses

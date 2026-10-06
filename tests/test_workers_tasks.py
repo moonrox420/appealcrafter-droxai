@@ -86,7 +86,10 @@ def test_send_campaign_task_blocked_by_suppression(db_session: Session) -> None:
     assert res.state == "SUCCESS"
     result = res.result
     assert result["status"] == "blocked"
-    assert "suppress" in result["reason"].lower() or "unsubscribe" in result["reason"].lower()
+    assert (
+        "suppress" in result["reason"].lower()
+        or "unsubscribe" in result["reason"].lower()
+    )
 
 
 def test_run_async_job_task(db_session: Session) -> None:
@@ -156,9 +159,9 @@ def test_backup_database_task_skipped_when_no_bucket() -> None:
 
 def test_backup_database_task_success() -> None:
     """Verify backup_database_task runs pg_dump and aws s3 cp when bucket is configured."""
-    with patch("app.core.config.get_settings") as mock_settings, \
-         patch("subprocess.run") as mock_subproc, \
-         patch("os.remove") as mock_remove:
+    with patch("app.core.config.get_settings") as mock_settings, patch(
+        "subprocess.run"
+    ) as mock_subproc, patch("os.remove") as mock_remove:
         mock_settings.return_value.database.backup_bucket = "my-backup-bucket"
         mock_settings.return_value.database.sqlalchemy_url = "postgresql://localhost/db"
         mock_subproc.return_value = MagicMock(returncode=0)

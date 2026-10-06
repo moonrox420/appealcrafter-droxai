@@ -145,10 +145,7 @@ def require_role(required_role: UserRole):
             if hasattr(required_role, "value")
             else str(required_role)
         )
-        if (
-            user_role_str != required_role_str
-            and user_role_str != UserRole.ADMIN.value
-        ):
+        if user_role_str != required_role_str and user_role_str != UserRole.ADMIN.value:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Insufficient permissions",

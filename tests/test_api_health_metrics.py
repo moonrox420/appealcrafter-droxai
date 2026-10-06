@@ -20,8 +20,9 @@ async def test_health_endpoint(async_client: AsyncClient) -> None:
 @pytest.mark.anyio
 async def test_readiness_endpoint_healthy(async_client: AsyncClient) -> None:
     """Test /ready returns 200 when database and broker are connected."""
-    with patch("app.api.health.verify_database_connection", return_value=True), \
-         patch("app.api.health.celery_app.connection") as mock_conn:
+    with patch("app.api.health.verify_database_connection", return_value=True), patch(
+        "app.api.health.celery_app.connection"
+    ) as mock_conn:
         mock_conn.return_value = MagicMock(connected=True)
         response = await async_client.get("/ready")
 
@@ -35,8 +36,9 @@ async def test_readiness_endpoint_healthy(async_client: AsyncClient) -> None:
 @pytest.mark.anyio
 async def test_readiness_endpoint_unhealthy_broker(async_client: AsyncClient) -> None:
     """Test /ready returns 503 when broker is unreachable."""
-    with patch("app.api.health.verify_database_connection", return_value=True), \
-         patch("app.api.health.celery_app.connection") as mock_conn:
+    with patch("app.api.health.verify_database_connection", return_value=True), patch(
+        "app.api.health.celery_app.connection"
+    ) as mock_conn:
         mock_conn.return_value = MagicMock(connected=False)
         response = await async_client.get("/ready")
 

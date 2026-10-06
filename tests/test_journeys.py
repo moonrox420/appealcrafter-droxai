@@ -39,27 +39,83 @@ def test_journey_condition_evaluations(db_session: Session) -> None:
     assert service.evaluate_condition(None, donor) is True
 
     # eq operator
-    assert service.evaluate_condition({"field": "channel", "operator": "eq", "value": "email"}, donor) is True
-    assert service.evaluate_condition({"field": "channel", "operator": "eq", "value": "sms"}, donor) is False
+    assert (
+        service.evaluate_condition(
+            {"field": "channel", "operator": "eq", "value": "email"}, donor
+        )
+        is True
+    )
+    assert (
+        service.evaluate_condition(
+            {"field": "channel", "operator": "eq", "value": "sms"}, donor
+        )
+        is False
+    )
 
     # gt and gte operators on capacity_score
-    assert service.evaluate_condition({"field": "capacity_score", "operator": "gt", "value": 400.0}, donor) is True
-    assert service.evaluate_condition({"field": "capacity_score", "operator": "gt", "value": 600.0}, donor) is False
-    assert service.evaluate_condition({"field": "capacity_score", "operator": "gte", "value": 500.0}, donor) is True
+    assert (
+        service.evaluate_condition(
+            {"field": "capacity_score", "operator": "gt", "value": 400.0}, donor
+        )
+        is True
+    )
+    assert (
+        service.evaluate_condition(
+            {"field": "capacity_score", "operator": "gt", "value": 600.0}, donor
+        )
+        is False
+    )
+    assert (
+        service.evaluate_condition(
+            {"field": "capacity_score", "operator": "gte", "value": 500.0}, donor
+        )
+        is True
+    )
 
     # lt and lte operators on propensity_score
-    assert service.evaluate_condition({"field": "propensity_score", "operator": "lt", "value": 0.9}, donor) is True
-    assert service.evaluate_condition({"field": "propensity_score", "operator": "lte", "value": 0.85}, donor) is True
+    assert (
+        service.evaluate_condition(
+            {"field": "propensity_score", "operator": "lt", "value": 0.9}, donor
+        )
+        is True
+    )
+    assert (
+        service.evaluate_condition(
+            {"field": "propensity_score", "operator": "lte", "value": 0.85}, donor
+        )
+        is True
+    )
 
     # in operator
-    assert service.evaluate_condition({"field": "channel", "operator": "in", "value": ["email", "direct_mail"]}, donor) is True
-    assert service.evaluate_condition({"field": "channel", "operator": "in", "value": ["phone", "sms"]}, donor) is False
+    assert (
+        service.evaluate_condition(
+            {"field": "channel", "operator": "in", "value": ["email", "direct_mail"]},
+            donor,
+        )
+        is True
+    )
+    assert (
+        service.evaluate_condition(
+            {"field": "channel", "operator": "in", "value": ["phone", "sms"]}, donor
+        )
+        is False
+    )
 
     # has_donated field
-    assert service.evaluate_condition({"field": "has_donated", "operator": "eq", "value": False}, donor) is True
+    assert (
+        service.evaluate_condition(
+            {"field": "has_donated", "operator": "eq", "value": False}, donor
+        )
+        is True
+    )
 
     # Unknown operator returns False
-    assert service.evaluate_condition({"field": "channel", "operator": "unknown_op", "value": "email"}, donor) is False
+    assert (
+        service.evaluate_condition(
+            {"field": "channel", "operator": "unknown_op", "value": "email"}, donor
+        )
+        is False
+    )
 
 
 def test_journey_due_steps_and_delays(db_session: Session) -> None:

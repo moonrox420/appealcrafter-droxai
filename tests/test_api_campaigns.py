@@ -26,7 +26,9 @@ async def test_create_campaign(
     assert response.status_code == 201
     data = response.json()
     assert data["name"] == "Annual Spring Gala"
-    assert data["description"] == "Annual fundraising gala campaign for regional donors."
+    assert (
+        data["description"] == "Annual fundraising gala campaign for regional donors."
+    )
     assert data["is_active"] is True
     assert "id" in data
     assert "created_at" in data

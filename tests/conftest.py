@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import uuid
 from collections.abc import AsyncGenerator, Generator
@@ -10,6 +11,29 @@ import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.orm import Session
+
+logger = logging.getLogger(__name__)
+
+# 1. Stop httpcore/httpx from attempting to write debug traces at shutdown
+logging.getLogger("httpcore").setLevel(logging.WARNING)
+logging.getLogger("httpx").setLevel(logging.WARNING)
+
+
+# 2. Close Hugging Face HTTP connections before pytest tears down streams
+@pytest.fixture(scope="session", autouse=True)
+def _cleanup_hf() -> Generator[None, None, None]:
+    """Close any lingering Hugging Face HTTP connections at teardown."""
+    yield
+    try:
+        from huggingface_hub.utils._http import close_session
+    except (ImportError, AttributeError):
+        return
+
+    try:
+        close_session()
+    except (RuntimeError, OSError, ValueError):
+        logger.exception("Failed to close Hugging Face session during test cleanup")
+
 
 # Set environment variables for testing before app or test modules are imported
 os.environ["ENVIRONMENT"] = "development"
@@ -73,7 +97,7 @@ def db_session() -> Generator[Session, None, None]:
 
 
 @pytest.fixture()
-def test_app(db_session: Session) -> FastAPI:
+def test_app(db_session: Session) -> Generator[FastAPI, None, None]:
     """Return the FastAPI application instance with database dependency override."""
     from app.main import app
 

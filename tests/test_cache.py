@@ -25,8 +25,9 @@ def test_cache_disabled_behavior() -> None:
 
 def test_cache_enabled_get_and_set() -> None:
     """Verify get and set serialization and hit tracking with mocked redis client."""
-    with patch("app.core.cache.get_settings") as mock_settings, \
-         patch("redis.Redis.from_url") as mock_from_url:
+    with patch("app.core.cache.get_settings") as mock_settings, patch(
+        "redis.Redis.from_url"
+    ) as mock_from_url:
         mock_settings.return_value.redis.cache_enabled = True
         mock_settings.return_value.redis.url = "redis://localhost:6379/0"
         mock_settings.return_value.redis.cache_ttl_seconds = 3600
@@ -40,7 +41,9 @@ def test_cache_enabled_get_and_set() -> None:
         # Test set
         success = service.set("user:123", {"name": "Alice", "score": 98})
         assert success is True
-        mock_redis.set.assert_called_once_with("user:123", json.dumps({"name": "Alice", "score": 98}), ex=3600)
+        mock_redis.set.assert_called_once_with(
+            "user:123", json.dumps({"name": "Alice", "score": 98}), ex=3600
+        )
 
         # Test get hit
         mock_redis.get.return_value = json.dumps({"name": "Alice", "score": 98})
@@ -55,8 +58,9 @@ def test_cache_enabled_get_and_set() -> None:
 
 def test_cache_error_handling() -> None:
     """Verify cache handles redis errors and non-serializable objects gracefully."""
-    with patch("app.core.cache.get_settings") as mock_settings, \
-         patch("redis.Redis.from_url") as mock_from_url:
+    with patch("app.core.cache.get_settings") as mock_settings, patch(
+        "redis.Redis.from_url"
+    ) as mock_from_url:
         mock_settings.return_value.redis.cache_enabled = True
         mock_settings.return_value.redis.url = "redis://localhost:6379/0"
         mock_settings.return_value.redis.cache_ttl_seconds = 300

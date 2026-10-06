@@ -34,7 +34,9 @@ async def test_login_success(async_client: AsyncClient, db_session: Session) -> 
 
 
 @pytest.mark.anyio
-async def test_login_invalid_password(async_client: AsyncClient, db_session: Session) -> None:
+async def test_login_invalid_password(
+    async_client: AsyncClient, db_session: Session
+) -> None:
     """Test login failure with invalid password."""
     user = User(
         email="test-wrong-pass@example.com",
@@ -64,7 +66,9 @@ async def test_login_user_not_found(async_client: AsyncClient) -> None:
 
 
 @pytest.mark.anyio
-async def test_login_inactive_user(async_client: AsyncClient, db_session: Session) -> None:
+async def test_login_inactive_user(
+    async_client: AsyncClient, db_session: Session
+) -> None:
     """Test login failure for disabled user account."""
     user = User(
         email="inactive@example.com",
@@ -84,7 +88,9 @@ async def test_login_inactive_user(async_client: AsyncClient, db_session: Sessio
 
 
 @pytest.mark.anyio
-async def test_refresh_token_success(async_client: AsyncClient, db_session: Session) -> None:
+async def test_refresh_token_success(
+    async_client: AsyncClient, db_session: Session
+) -> None:
     """Test refreshing token pair with a valid refresh token."""
     user = User(
         email="refresh@example.com",
@@ -117,7 +123,9 @@ async def test_refresh_token_invalid(async_client: AsyncClient) -> None:
 
 
 @pytest.mark.anyio
-async def test_create_user_success(async_client: AsyncClient, db_session: Session) -> None:
+async def test_create_user_success(
+    async_client: AsyncClient, db_session: Session
+) -> None:
     """Test creating a new user."""
     response = await async_client.post(
         "/auth/users",
@@ -133,7 +141,9 @@ async def test_create_user_success(async_client: AsyncClient, db_session: Sessio
 
 
 @pytest.mark.anyio
-async def test_create_user_conflict(async_client: AsyncClient, db_session: Session) -> None:
+async def test_create_user_conflict(
+    async_client: AsyncClient, db_session: Session
+) -> None:
     """Test creating a duplicate user returns 409 Conflict."""
     user = User(
         email="duplicate@example.com",

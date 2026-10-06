@@ -53,7 +53,11 @@ def generate_appeal(
                 subject=appeal.subject,
                 body=appeal.body,
                 cta=appeal.cta,
-                tone=appeal.tone.value if hasattr(appeal.tone, "value") else str(appeal.tone),
+                tone=(
+                    appeal.tone.value
+                    if hasattr(appeal.tone, "value")
+                    else str(appeal.tone)
+                ),
                 capacity_score=appeal.capacity_score,
                 is_template_fallback=appeal.is_template_fallback,
                 created_at=appeal.created_at,
