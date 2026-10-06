@@ -9,8 +9,7 @@ from collections.abc import AsyncGenerator, Generator
 import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import Session
 
 # Set environment variables for testing before app or test modules are imported
 os.environ["ENVIRONMENT"] = "development"
@@ -32,9 +31,11 @@ os.environ["LLM_GUARDRAILS_ENABLED"] = "true"
 os.environ["OBSERVABILITY_PROMETHEUS_ENABLED"] = "false"
 
 from app.core.config import get_settings
+
 get_settings.cache_clear()
 
 import app.db.session
+
 app.db.session.engine = app.db.session.create_database_engine()
 app.db.session.SessionLocal.configure(bind=app.db.session.engine)
 

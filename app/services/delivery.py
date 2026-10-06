@@ -56,7 +56,7 @@ class DeliveryService:
             delivery.provider_message_id = result.provider_message_id
             delivery.status = DeliveryStatus.SENT
             delivery.sent_at = datetime.now(timezone.utc)
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             delivery.status = DeliveryStatus.FAILED
             delivery.error_detail = str(exc)
             logger.error(

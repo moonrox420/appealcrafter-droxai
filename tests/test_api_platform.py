@@ -6,7 +6,7 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy.orm import Session
 
-from app.models.entities import Campaign, KnowledgeDocument, Template
+from app.models.entities import Campaign
 
 
 @pytest.mark.anyio

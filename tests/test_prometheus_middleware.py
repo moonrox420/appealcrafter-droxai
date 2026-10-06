@@ -3,15 +3,13 @@
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
+
 import pytest
 from fastapi import Request, Response
 
 from app.core.metrics import (
-    ERROR_COUNT,
-    REQUEST_COUNT,
-    REQUEST_LATENCY,
-    prometheus_middleware,
     prometheus_metrics_endpoint,
+    prometheus_middleware,
 )
 
 

@@ -4,17 +4,10 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import Session
 
-from app.core.config import get_settings
-from app.db.session import Base
 from app.models.entities import Appeal, Delivery, DeliveryStatus, Donor, Unsubscribe
 from app.services.suppression import SuppressionService
-
-
-
 
 
 def test_suppressed_email_blocked(db_session: Session) -> None:

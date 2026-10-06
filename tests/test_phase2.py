@@ -5,11 +5,8 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import Session
 
-from app.core.config import get_settings
-from app.db.session import Base
 from app.models.entities import (
     AppealTone,
     Donor,
@@ -29,8 +26,6 @@ from app.services.ml import PredictionService
 from app.services.rag import RagPipeline, SemanticChunker
 from app.services.suppression import SuppressionService
 from app.services.template import TemplateManagementService
-
-
 
 
 def _create_test_donor(db_session: Session) -> Donor:

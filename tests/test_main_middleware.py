@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import pytest
-from httpx import AsyncClient
 from fastapi import Request
+from httpx import AsyncClient
+
 from app.main import unhandled_exception_handler
 
 

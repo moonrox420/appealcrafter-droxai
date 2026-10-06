@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from unittest.mock import patch
 import pytest
+from cryptography.exceptions import InvalidTag
 
 from app.core.encryption import PiiEncryptionService, get_pii_encryption_service
 
@@ -33,7 +33,7 @@ def test_tampered_ciphertext_fails() -> None:
     tampered_parts = parts[:3] + ["AAAA" + parts[3][4:]]
     tampered_ciphertext = ":".join(tampered_parts)
 
-    with pytest.raises(Exception):
+    with pytest.raises(InvalidTag):
         service.decrypt_field(tampered_ciphertext)
 
 

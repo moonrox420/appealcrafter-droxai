@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.core.security import get_current_user
@@ -32,7 +33,9 @@ def ingest_donors(
         try:
             donor_service.create_donor(donor_payload)
             accepted_count += 1
-        except Exception as exc:
+        except (ValueError, SQLAlchemyError) as exc:
+            self_session = db_session
+            self_session.rollback()
             rejected_count += 1
             errors.append(
                 {"index": index, "email": donor_payload.email, "error": str(exc)}

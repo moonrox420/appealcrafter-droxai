@@ -206,7 +206,7 @@ class GuardrailPipeline:
                     "judge_model": self.settings.llm.judge_model_name,
                 },
             )
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             logger.error("LLM-as-Judge failed", extra={"error": str(exc)})
             return GuardrailStageResult(
                 stage=GuardrailStage.SAFETY,
@@ -406,7 +406,7 @@ class GuardrailPipeline:
                 reasons=ungrounded_claims,
                 details={"chunks_used": len(candidate.retrieved_chunks)},
             )
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             logger.error("Grounding judge failed", extra={"error": str(exc)})
             return GuardrailStageResult(
                 stage=GuardrailStage.GROUNDING,
@@ -423,12 +423,12 @@ class GuardrailPipeline:
         if candidate.tone == AppealTone.URGENT:
             if candidate.tone.value not in candidate.body.lower():
                 voice_concerns.append("Urgent tone not reflected in body")
-        elif candidate.tone == AppealTone.GRATEFUL:
-            if (
-                "thank" not in candidate.body.lower()
-                and "grateful" not in candidate.body.lower()
-            ):
-                voice_concerns.append("Grateful tone not reflected in body")
+        elif (
+            candidate.tone == AppealTone.GRATEFUL
+            and "thank" not in candidate.body.lower()
+            and "grateful" not in candidate.body.lower()
+        ):
+            voice_concerns.append("Grateful tone not reflected in body")
 
         if len(candidate.body.split()) > 500:
             voice_concerns.append(

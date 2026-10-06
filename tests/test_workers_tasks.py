@@ -3,14 +3,18 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from unittest.mock import MagicMock, PropertyMock, patch
+from unittest.mock import MagicMock, patch
 
-import pytest
 from sqlalchemy.orm import Session
 
-from app.models.entities import Appeal, AsyncJob, AsyncJobStatus, Campaign, Delivery, DeliveryStatus, Donor, SuppressionEntry
+from app.models.entities import (
+    Appeal,
+    AsyncJob,
+    AsyncJobStatus,
+    Donor,
+    SuppressionEntry,
+)
 from app.workers.tasks import (
-    DatabaseTask,
     auto_send_appeals_task,
     backup_database_task,
     monitor_queue_depth_task,
@@ -18,8 +22,6 @@ from app.workers.tasks import (
     run_async_job_task,
     send_campaign_task,
 )
-
-
 
 
 def test_send_campaign_task_success(db_session: Session) -> None:
@@ -168,6 +170,7 @@ def test_backup_database_task_success() -> None:
     assert result["status"] == "completed"
     assert "backup_filename" in result
     assert mock_subproc.call_count == 2
+    mock_remove.assert_called_once()
 
 
 def test_monitor_queue_depth_task() -> None:

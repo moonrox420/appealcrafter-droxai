@@ -3,10 +3,18 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
-import pytest
+
 from sqlalchemy.orm import Session
 
-from app.models.entities import Appeal, Campaign, Delivery, DeliveryStatus, Donor, Journey, JourneyStep, Template, TemplateVersion
+from app.models.entities import (
+    Appeal,
+    Campaign,
+    Delivery,
+    DeliveryStatus,
+    Donor,
+    Template,
+    TemplateVersion,
+)
 from app.services.journeys import JourneyService
 
 

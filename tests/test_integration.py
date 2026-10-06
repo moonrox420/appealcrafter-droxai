@@ -4,12 +4,8 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import Session
 
-from app.core.config import get_settings
-from app.db.session import Base
 from app.models.entities import Delivery, DeliveryStatus
 from app.schemas.donor import DonationCreate, DonorCreate
 from app.services.appeal import AppealService

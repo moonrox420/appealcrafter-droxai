@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.orm import Session
 
-from app.models.entities import Donor, User
+from app.models.entities import Donor
 
 
 @pytest.mark.anyio

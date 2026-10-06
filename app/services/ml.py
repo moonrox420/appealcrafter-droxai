@@ -354,6 +354,7 @@ class PredictionService:
                 else validate_predictions
             )
             test_predictions = classifier.predict(test_x)
+            test_accuracy = float(accuracy_score(test_y, test_predictions))
 
             precision = float(
                 precision_score(validate_y, validate_predictions, zero_division=0)
@@ -383,6 +384,7 @@ class PredictionService:
                     "auc": auc,
                     "precision": precision,
                     "accuracy": accuracy,
+                    "test_accuracy": test_accuracy,
                     "test_size": len(test_x),
                 },
                 feature_importance=importance,

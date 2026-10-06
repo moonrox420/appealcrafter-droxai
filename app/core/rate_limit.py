@@ -5,7 +5,7 @@ from __future__ import annotations
 import time
 from collections.abc import Callable
 
-from fastapi import Request, Response, status
+from fastapi import Response, status
 
 
 class InMemoryRateLimiter:
@@ -59,7 +59,6 @@ class RateLimitMiddleware:
             await self.app(scope, receive, send)
             return
 
-        request = Request(scope, receive)
         client_ip = scope.get("client", ("unknown", 0))[0]
         allowed, retry_after = self.limiter.check_request(str(client_ip))
         if not allowed:

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timezone
+from typing import Any
 
 from celery import Task
 from sqlalchemy.orm import Session
@@ -15,8 +16,6 @@ from app.services.delivery import DeliveryService
 from app.services.ml import PredictionService
 from app.services.suppression import SuppressionService
 from app.workers.celery_app import celery_app
-
-from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -198,10 +197,10 @@ def monitor_queue_depth_task(self: DatabaseTask) -> dict:
         inspector = celery_app.control.inspect()
         active_queues = inspector.active_queues() or {}
         queue_depth = 0
-        for worker_name, queues in active_queues.items():
+        for queues in active_queues.values():
             queue_depth += len(queues)
         QUEUE_DEPTH.labels(queue="appealcrafter").set(queue_depth)
         return {"queue_depth": queue_depth}
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         logger.warning("Queue depth monitoring failed", extra={"error": str(exc)})
         return {"status": "failed", "error": str(exc)}

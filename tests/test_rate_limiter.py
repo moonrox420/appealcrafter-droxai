@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import time
 from app.core.rate_limit import InMemoryRateLimiter
 
 

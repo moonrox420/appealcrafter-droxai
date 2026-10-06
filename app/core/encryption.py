@@ -53,7 +53,7 @@ class PiiEncryptionService:
         components = encrypted_value.split(":", 3)
         if len(components) != 4:
             raise ValueError("Malformed encrypted field value.")
-        _, version, encoded_nonce, encoded_ciphertext = components
+        _, _version, encoded_nonce, encoded_ciphertext = components
         nonce = base64.b64decode(encoded_nonce)
         ciphertext = base64.b64decode(encoded_ciphertext)
         aesgcm = AESGCM(self._key_bytes)

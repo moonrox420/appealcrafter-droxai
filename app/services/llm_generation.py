@@ -162,7 +162,7 @@ class LlmAppealGenerationService:
                     chunk.chunk_id for chunk in retrieval_result.chunks
                 ],
             )
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             logger.error(
                 "LLM generation failed; falling back to template",
                 extra={"error": str(exc), "donor_id": donor.id},

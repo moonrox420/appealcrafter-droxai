@@ -10,7 +10,6 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-import app
 from app.api import appeals, auth, campaigns, donors, health, metrics, webhooks
 from app.api.operations import (
     compliance_router,
